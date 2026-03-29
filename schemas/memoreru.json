@@ -1,0 +1,205 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://memoreru.com/schemas/memoreru.json",
+  "title": "Memoreru Manifest",
+  "description": ".memoreru.json — ファイル名をキー、コンテンツメタデータを値とするマニフェスト",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSONスキーマURL（エディタ補完用）"
+    }
+  },
+  "additionalProperties": {
+    "$ref": "#/definitions/entry"
+  },
+  "definitions": {
+    "entry": {
+      "type": "object",
+      "required": ["content_type"],
+      "properties": {
+        "content_id": {
+          "type": "string",
+          "description": "コンテンツID（初回push時に自動設定）"
+        },
+        "content_type": {
+          "type": "string",
+          "enum": ["folder", "page", "table", "slide", "view", "graph", "dashboard"],
+          "description": "コンテンツタイプ"
+        },
+        "title": {
+          "type": "string",
+          "description": "タイトル（省略時はファイル名から推定）"
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["public", "team", "private"],
+          "default": "private",
+          "description": "公開範囲"
+        },
+        "team_id": {
+          "type": "string",
+          "description": "チームID（scope が team の場合に必要）"
+        },
+        "description": {
+          "type": "string",
+          "description": "説明文"
+        },
+        "description_expanded": {
+          "type": "boolean",
+          "default": false,
+          "description": "説明を展開して表示する"
+        },
+        "category": {
+          "type": "string",
+          "description": "カテゴリ名またはキー（例: テクノロジー, technology）"
+        },
+        "label": {
+          "type": "string",
+          "description": "ラベル"
+        },
+        "emoji": {
+          "type": "string",
+          "description": "絵文字アイコン"
+        },
+        "slug": {
+          "type": "string",
+          "description": "カスタムURLスラッグ（有料プラン）"
+        },
+        "language": {
+          "type": "string",
+          "default": "en",
+          "description": "言語コード（ISO 639-1: ja, en 等）"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "タグ名の配列"
+        },
+        "persons": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "人物名の配列"
+        },
+        "thumbnail": {
+          "type": "string",
+          "description": "サムネイル画像のローカル相対パス（例: ./images/thumb.png）"
+        },
+        "sources": {
+          "type": "string",
+          "description": "参考文献"
+        },
+        "date_type": {
+          "type": "string",
+          "enum": ["year", "month", "date", "datetime"],
+          "description": "日時精度"
+        },
+        "date_start": {
+          "type": "string",
+          "description": "開始日時（例: 2026, 2026-01, 2026-01-15, 2026-01-15T10:00:00）"
+        },
+        "date_end": {
+          "type": "string",
+          "description": "終了日時（date_start と同じ形式）"
+        },
+        "location_name": {
+          "type": "string",
+          "description": "場所名"
+        },
+        "location_address": {
+          "type": "string",
+          "description": "住所"
+        },
+        "location_lat": {
+          "type": "number",
+          "description": "緯度（WGS84）"
+        },
+        "location_lng": {
+          "type": "number",
+          "description": "経度（WGS84）"
+        },
+        "parent_id": {
+          "type": "string",
+          "description": "親フォルダの content_id"
+        },
+        "publish_status": {
+          "type": "string",
+          "enum": ["draft", "published"],
+          "default": "published",
+          "description": "公開ステータス"
+        },
+        "scheduled_at": {
+          "type": "string",
+          "description": "予約公開日時（ISO 8601）"
+        },
+        "expires_at": {
+          "type": "string",
+          "description": "公開期限（ISO 8601）"
+        },
+        "discovery": {
+          "type": "string",
+          "enum": ["listed", "unlisted", "profile"],
+          "default": "listed",
+          "description": "公開先（listed: 検索可能, unlisted: URL共有のみ, profile: プロフィールのみ）"
+        },
+        "access_level": {
+          "type": "string",
+          "enum": ["open", "login_required", "followers_only"],
+          "default": "open",
+          "description": "閲覧制限（open: 誰でも, login_required: ログインユーザー, followers_only: フォロワーのみ）"
+        },
+        "can_embed": {
+          "type": "boolean",
+          "default": true,
+          "description": "埋め込みを許可する"
+        },
+        "can_ai_crawl": {
+          "type": "boolean",
+          "default": true,
+          "description": "AIクローラーを許可する"
+        },
+        "can_hatena_comment": {
+          "type": "boolean",
+          "default": true,
+          "description": "はてなブックマークのコメントを許可する"
+        },
+        "has_password": {
+          "type": "boolean",
+          "default": false,
+          "description": "パスワード保護"
+        },
+        "is_suspended": {
+          "type": "boolean",
+          "default": false,
+          "description": "一時停止"
+        },
+        "is_archived": {
+          "type": "boolean",
+          "default": false,
+          "description": "アーカイブ"
+        },
+        "is_pinned": {
+          "type": "boolean",
+          "default": false,
+          "description": "ピン留め"
+        },
+        "is_locked": {
+          "type": "boolean",
+          "default": false,
+          "description": "編集ロック"
+        },
+        "auto_summary": {
+          "type": "boolean",
+          "default": false,
+          "description": "要約を自動生成する"
+        },
+        "auto_translate": {
+          "type": "boolean",
+          "default": false,
+          "description": "翻訳版を自動生成する"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
