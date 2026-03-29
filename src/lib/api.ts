@@ -241,21 +241,11 @@ export async function listRootContents(mineOnly: boolean): Promise<ContentSummar
 }
 
 export async function getTenantInfo(): Promise<{
-  tenantId: string;
   slug: string;
   isDefault: boolean;
 }> {
-  const res = await request<Record<string, unknown>>('GET', '/api/auth-tenant/tenants');
-  const data = (res as Record<string, unknown>).data as Record<string, unknown> | undefined;
-  const activeTenantId = (data?.activeTenantId as string) || 'SYSTEM';
-  const tenants = (data?.tenants as Array<{ tenant_id: string; slug: string }>) || [];
-  const active = tenants.find(t => t.tenant_id === activeTenantId);
-  const isDefault = activeTenantId === 'SYSTEM';
-  return {
-    tenantId: activeTenantId,
-    slug: active?.slug || (isDefault ? 'common' : activeTenantId),
-    isDefault,
-  };
+  const res = await request<{ slug: string; isDefault: boolean }>('GET', '/api/sync/tenant');
+  return { slug: res.slug, isDefault: res.isDefault };
 }
 
 // =============================================================================
