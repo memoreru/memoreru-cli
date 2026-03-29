@@ -17,10 +17,10 @@ Sync local Markdown, CSV, and JSON files with [Memoreru](https://memoreru.com) �
 
 ```bash
 # No install required
-npx @memoreru/cli --help
+npx @memoreru-sdk/cli --help
 
 # Or install globally
-npm install -g @memoreru/cli
+npm install -g @memoreru-sdk/cli
 ```
 
 ## 🌱 Setup
@@ -257,7 +257,7 @@ Combine with [Claude Code](https://claude.ai/code) to manage content using natur
 **CLI Skill (File Sync)** — Teach Claude Code how to use pull/push:
 
 ```bash
-cp -r node_modules/@memoreru/cli/skills/memoreru-cli ~/.claude/skills/
+cp -r node_modules/@memoreru-sdk/cli/skills/memoreru-cli ~/.claude/skills/
 ```
 
 **MCP (Data Operations)** — Add `.mcp.json` to your project root:
@@ -282,8 +282,8 @@ cp -r node_modules/@memoreru/cli/skills/memoreru-cli ~/.claude/skills/
 ## 🧩 Programmatic API
 
 ```typescript
-import { configure, pullContent, pullTableData, upsertContent } from '@memoreru/cli';
-import type { UpsertInput } from '@memoreru/cli';
+import { configure, pullContent, pullTableData, upsertContent } from '@memoreru-sdk/cli';
+import type { UpsertInput } from '@memoreru-sdk/cli';
 
 configure({
   baseUrl: 'https://memoreru.com',

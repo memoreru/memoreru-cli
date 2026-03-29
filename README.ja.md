@@ -17,10 +17,10 @@
 
 ```bash
 # インストール不要で実行
-npx @memoreru/cli --help
+npx @memoreru-sdk/cli --help
 
 # グローバルインストール
-npm install -g @memoreru/cli
+npm install -g @memoreru-sdk/cli
 ```
 
 ## 🌱 セットアップ
@@ -257,7 +257,7 @@ my-project/
 **CLI スキル（ファイル同期）** — Claude Code に pull/push の使い方を教える:
 
 ```bash
-cp -r node_modules/@memoreru/cli/skills/memoreru-cli ~/.claude/skills/
+cp -r node_modules/@memoreru-sdk/cli/skills/memoreru-cli ~/.claude/skills/
 ```
 
 **MCP（データ操作）** — プロジェクトルートに `.mcp.json` を作成:
@@ -282,8 +282,8 @@ cp -r node_modules/@memoreru/cli/skills/memoreru-cli ~/.claude/skills/
 ## 🧩 プログラマティック API
 
 ```typescript
-import { configure, pullContent, pullTableData, upsertContent } from '@memoreru/cli';
-import type { UpsertInput } from '@memoreru/cli';
+import { configure, pullContent, pullTableData, upsertContent } from '@memoreru-sdk/cli';
+import type { UpsertInput } from '@memoreru-sdk/cli';
 
 configure({
   baseUrl: 'https://memoreru.com',

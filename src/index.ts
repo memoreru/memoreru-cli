@@ -1,5 +1,5 @@
 /**
- * @memoreru/cli — Programmatic API
+ * @memoreru-sdk/cli — Programmatic API
  *
  * CLI以外からもライブラリとして利用可能。
  */
