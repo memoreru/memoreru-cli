@@ -134,10 +134,10 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean): Promise<string 
     console.log(`   📸 Uploading ${deferredImages.length} image(s) individually...`);
     let convertedBody = payload.body as string;
     for (const img of deferredImages) {
-      const { localPath, url } = await uploadImage(result.content_id, img);
+      const { localPath, url, skipped } = await uploadImage(result.content_id, img);
       // Markdown内のローカルパスをAPIパスに置換
       convertedBody = convertedBody.split(`](${localPath})`).join(`](${url})`);
-      console.log(`   ✓ ${localPath}`);
+      console.log(skipped ? `   ⏭ ${localPath} (unchanged)` : `   ✓ ${localPath}`);
     }
     // 置換済みbodyをpush（画像なし）
     await pushContent(result.content_id, convertedBody, [], contentType as 'page' | 'slide');

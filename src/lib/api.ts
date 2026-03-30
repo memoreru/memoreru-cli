@@ -85,13 +85,13 @@ export async function pushContent(
 export async function uploadImage(
   contentId: string,
   image: PushImage,
-): Promise<{ localPath: string; url: string }> {
+): Promise<{ localPath: string; url: string; skipped: boolean }> {
   const res = await request<Record<string, unknown>>(
     'POST',
     `/api/sync/upload-image/${contentId}`,
     image,
   );
-  return (res.data ?? res) as { localPath: string; url: string };
+  return (res.data ?? res) as { localPath: string; url: string; skipped: boolean };
 }
 
 export interface PullImageMeta {
