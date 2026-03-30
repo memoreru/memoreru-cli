@@ -4,7 +4,7 @@
 
 import { existsSync } from 'fs';
 import { basename, dirname, join } from 'path';
-import { upsertContent } from '../lib/api.js';
+import { pushContent, uploadImage, upsertContent } from '../lib/api.js';
 import { readImageAsBase64, readMarkdown } from '../lib/files.js';
 import { updateManifestEntry } from '../lib/manifest.js';
 import { scanDirectory } from '../lib/scan.js';
@@ -74,6 +74,7 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean): Promise<string 
   if (entry.parentContentId) payload.parent_id = entry.parentContentId;
 
   // Body 読み込み
+  let deferredImages: { localPath: string; data: string; mimeType: string }[] = [];
   if (contentType === 'page' || contentType === 'slide') {
     const bodyPath = fileName ? join(dirPath, fileName) : join(dirPath, 'body.md');
     if (existsSync(bodyPath)) {
@@ -86,7 +87,17 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean): Promise<string 
         const img = readImageAsBase64(dirPath, localPath);
         if (img) images.push({ localPath, ...img });
       }
-      if (images.length > 0) payload.images = images;
+
+      // base64合計サイズで判定（3MB以上 → 個別アップロード）
+      const totalSize = images.reduce((sum, img) => sum + img.data.length, 0);
+      const INDIVIDUAL_THRESHOLD = 3 * 1024 * 1024;
+
+      if (totalSize >= INDIVIDUAL_THRESHOLD) {
+        // 画像はupsert後に個別アップロード
+        deferredImages = images;
+      } else if (images.length > 0) {
+        payload.images = images;
+      }
     }
   } else if (contentType === 'table') {
     const csvPath = fileName ? join(dirPath, fileName) : join(dirPath, 'data.csv');
@@ -117,6 +128,21 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean): Promise<string 
   const result = await upsertContent(payload);
   const action = result.created ? 'created' : 'updated';
   console.log(`   ✅ ${action} (${result.content_id})`);
+
+  // 個別アップロードが必要な場合
+  if (deferredImages.length > 0) {
+    console.log(`   📸 Uploading ${deferredImages.length} image(s) individually...`);
+    let convertedBody = payload.body as string;
+    for (const img of deferredImages) {
+      const { localPath, url } = await uploadImage(result.content_id, img);
+      // Markdown内のローカルパスをAPIパスに置換
+      convertedBody = convertedBody.split(`](${localPath})`).join(`](${url})`);
+      console.log(`   ✓ ${localPath}`);
+    }
+    // 置換済みbodyをpush（画像なし）
+    await pushContent(result.content_id, convertedBody, [], contentType as 'page' | 'slide');
+    console.log(`   ✅ Body updated with image URLs`);
+  }
 
   // 新規作成時: content_id をマニフェストに書き戻し
   if (result.created) {

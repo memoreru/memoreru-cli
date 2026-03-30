@@ -82,6 +82,18 @@ export async function pushContent(
   return (res.data ?? res) as { body: string; uploadedCount: number; skippedCount: number };
 }
 
+export async function uploadImage(
+  contentId: string,
+  image: PushImage,
+): Promise<{ localPath: string; url: string }> {
+  const res = await request<Record<string, unknown>>(
+    'POST',
+    `/api/sync/upload-image/${contentId}`,
+    image,
+  );
+  return (res.data ?? res) as { localPath: string; url: string };
+}
+
 export interface PullImageMeta {
   memoreruUrl: string;
   localPath: string;
