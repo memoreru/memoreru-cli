@@ -9,6 +9,8 @@ Sync local Markdown, CSV, and JSON files with [Memoreru](https://memoreru.com) �
 - 🐣 **Init** — Generate project templates
 - 🤲 **Pull** — Download Memoreru content to local files
 - 🚀 **Push** — Upload local files to Memoreru
+- 🚦 **Status** — Show local changes since last sync
+- 🔍 **Diff** — Show file-level diffs before pushing
 - 🖼️ **Images** — Auto-upload on push, download only changes on pull
 - 🏷️ **Rich Metadata** — Categories, tags, thumbnails, dates, locations, and more
 - 🤖 **Claude Code** — CLI skill and MCP for AI-assisted workflows
@@ -81,6 +83,52 @@ memoreru push ./my-data          # Push from specific directory
 memoreru push ./my-data --preview  # Preview without uploading
 ```
 
+### Status
+
+Show local changes since the last pull or push.
+
+```bash
+memoreru status                  # Show changes in current directory
+memoreru status ./my-data        # Show changes in specific directory
+```
+
+```
+  memoreru status
+
+  Modified:
+    M  readme.md (page) "Project README" [body]
+
+  New (not yet pushed):
+    +  new-page.md (page) "New Page"
+
+  2 content(s): 1 modified, 1 new
+```
+
+No API key required — works entirely offline.
+
+### Diff
+
+Show unified diffs for modified files.
+
+```bash
+memoreru diff                          # Show all diffs
+memoreru diff --file readme.md         # Show diff for a specific file
+```
+
+```diff
+--- a/readme.md (synced 2026-03-31)
++++ b/readme.md (local)
+@@ -3,7 +3,7 @@
+ ## Section 1
+
+-Old content
++New content
+
+ ## Section 2
+```
+
+No API key required — compares against locally stored snapshots.
+
 ## 🎯 File Structure
 
 The CLI uses `.memoreru.json` manifests. **Only listed items** are synced.
@@ -88,6 +136,7 @@ The CLI uses `.memoreru.json` manifests. **Only listed items** are synced.
 ```
 my-project/
 ├── .memoreru.json          # Manifest
+├── .memoreru/              # Sync state (auto-generated, add to .gitignore)
 ├── readme.md               # Page
 ├── members.csv             # Table
 ├── docs/                   # Folder
@@ -98,6 +147,8 @@ my-project/
 ```
 
 > ⚠️ Keys are file or directory names only. Folder contents are **not** auto-uploaded — place a `.memoreru.json` in each subdirectory.
+>
+> 💡 Add `.memoreru/` to your `.gitignore` — it stores sync snapshots for `status` and `diff`, not source content.
 
 ### .memoreru.json
 

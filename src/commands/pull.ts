@@ -24,6 +24,7 @@ import {
 } from '../lib/manifest.js';
 import { scanDirectory } from '../lib/scan.js';
 import type { ScanEntry } from '../lib/scan.js';
+import { prepareSyncState, readState, writeState, type StateFile } from '../lib/state.js';
 import { verifyTenant } from '../lib/tenant.js';
 
 // =============================================================================
@@ -41,7 +42,7 @@ function escapeCsvField(value: string): string {
 // Settings pull (view/graph/dashboard)
 // =============================================================================
 
-async function pullSettings(entry: ScanEntry, isPreview: boolean): Promise<boolean> {
+async function pullSettings(entry: ScanEntry, isPreview: boolean, projectRoot: string, state: StateFile): Promise<boolean> {
   const { dirPath, fileName, meta } = entry;
 
   if (!meta.content_id) {
@@ -63,14 +64,20 @@ async function pullSettings(entry: ScanEntry, isPreview: boolean): Promise<boole
   console.log(`   ${settingsPath}`);
 
   if (!isPreview) {
-    writeMarkdown(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+    const jsonBody = JSON.stringify(settings, null, 2) + '\n';
+    writeMarkdown(settingsPath, jsonBody);
     if (fileName) {
       const metaUpdates: Record<string, unknown> = {};
       if (result.tags) metaUpdates.tags = result.tags.length > 0 ? result.tags : undefined;
       if (result.persons) metaUpdates.persons = result.persons && result.persons.length > 0 ? result.persons : undefined;
       if (Object.keys(metaUpdates).length > 0) {
         updateManifestEntry(dirPath, fileName, metaUpdates);
+        // メモリ上の meta も更新（metaHash の整合性のため）
+        Object.assign(meta, metaUpdates);
       }
+    }
+    if (meta.content_id) {
+      prepareSyncState(projectRoot, state, meta.content_id, entry, jsonBody);
     }
   }
 
@@ -82,7 +89,7 @@ async function pullSettings(entry: ScanEntry, isPreview: boolean): Promise<boole
 // テーブル pull
 // =============================================================================
 
-async function pullTable(entry: ScanEntry, isPreview: boolean): Promise<boolean> {
+async function pullTable(entry: ScanEntry, isPreview: boolean, projectRoot: string, state: StateFile): Promise<boolean> {
   const { dirPath, fileName, meta } = entry;
 
   if (!meta.content_id) {
@@ -114,6 +121,9 @@ async function pullTable(entry: ScanEntry, isPreview: boolean): Promise<boolean>
         columns: columns.map(c => ({ name: c.name, type: c.type })),
       });
     }
+    if (meta.content_id) {
+      prepareSyncState(projectRoot, state, meta.content_id, entry, csv);
+    }
   }
 
   console.log(`   ✅ Table pulled`);
@@ -124,16 +134,16 @@ async function pullTable(entry: ScanEntry, isPreview: boolean): Promise<boolean>
 // Page/Slide pull
 // =============================================================================
 
-async function pullSingle(entry: ScanEntry, isPreview: boolean): Promise<boolean> {
+async function pullSingle(entry: ScanEntry, isPreview: boolean, projectRoot: string, state: StateFile): Promise<boolean> {
   const { dirPath, fileName, meta } = entry;
   const contentType = meta.content_type;
 
   if (contentType === 'folder') return true;
 
-  if (contentType === 'table') return pullTable(entry, isPreview);
+  if (contentType === 'table') return pullTable(entry, isPreview, projectRoot, state);
 
   if (contentType === 'view' || contentType === 'graph' || contentType === 'dashboard') {
-    return pullSettings(entry, isPreview);
+    return pullSettings(entry, isPreview, projectRoot, state);
   }
 
   if (contentType !== 'page' && contentType !== 'slide') {
@@ -210,6 +220,12 @@ async function pullSingle(entry: ScanEntry, isPreview: boolean): Promise<boolean
       metaUpdates.tags = result.tags.length > 0 ? result.tags : undefined;
       metaUpdates.persons = result.persons && result.persons.length > 0 ? result.persons : undefined;
       updateManifestEntry(dirPath, fileName, metaUpdates);
+      // メモリ上の meta も更新（metaHash の整合性のため）
+      Object.assign(meta, metaUpdates);
+    }
+
+    if (meta.content_id) {
+      prepareSyncState(projectRoot, state, meta.content_id, entry, result.body);
     }
   }
 
@@ -338,18 +354,24 @@ export async function pullCommand(
 
   console.log(`\nℹ️${entries.length} content(s) to pull`);
 
+  const state = isPreview ? { version: 1 as const, contents: {} } : readState(dir);
   let succeeded = 0;
   let failed = 0;
 
   for (const entry of entries) {
     try {
-      const ok = await pullSingle(entry, isPreview);
+      const ok = await pullSingle(entry, isPreview, dir, state);
       if (ok) succeeded++;
       else failed++;
     } catch (err) {
       console.error(`   ❌${entry.meta.title}: ${err instanceof Error ? err.message : err}`);
       failed++;
     }
+  }
+
+  // state.json を1回だけ書き込み
+  if (!isPreview && succeeded > 0) {
+    writeState(dir, state);
   }
 
   console.log(`\n${isPreview ? 'ℹ️Preview complete' : '✅ Pull complete'}`);

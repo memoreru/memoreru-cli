@@ -9,6 +9,7 @@ import { readImageAsBase64, readMarkdown } from '../lib/files.js';
 import { updateManifestEntry } from '../lib/manifest.js';
 import { scanDirectory } from '../lib/scan.js';
 import type { ScanEntry } from '../lib/scan.js';
+import { prepareSyncState, readState, writeState, type StateFile } from '../lib/state.js';
 import { verifyTenant } from '../lib/tenant.js';
 
 /** Markdown から画像パスを抽出 */
@@ -34,7 +35,7 @@ function typePriority(type: string): number {
   return order[type] ?? 2;
 }
 
-async function pushSingle(entry: ScanEntry, isPreview: boolean): Promise<string | null> {
+async function pushSingle(entry: ScanEntry, isPreview: boolean, projectRoot: string, state: StateFile): Promise<string | null> {
   const { dirPath, fileName, meta } = entry;
   const contentType = meta.content_type;
 
@@ -75,11 +76,13 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean): Promise<string 
 
   // Body 読み込み
   let deferredImages: { localPath: string; data: string; mimeType: string }[] = [];
+  let rawFileContent: string | undefined; // スナップショット用（ファイルの生の内容）
   if (contentType === 'page' || contentType === 'slide') {
     const bodyPath = fileName ? join(dirPath, fileName) : join(dirPath, 'body.md');
     if (existsSync(bodyPath)) {
       const body = readMarkdown(bodyPath);
       payload.body = body;
+      rawFileContent = body;
 
       // 画像収集
       const images = [];
@@ -102,12 +105,16 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean): Promise<string 
   } else if (contentType === 'table') {
     const csvPath = fileName ? join(dirPath, fileName) : join(dirPath, 'data.csv');
     if (existsSync(csvPath)) {
-      payload.csv_data = readMarkdown(csvPath);
+      const csvContent = readMarkdown(csvPath);
+      payload.csv_data = csvContent;
+      rawFileContent = csvContent;
     }
   } else if (['view', 'graph', 'dashboard'].includes(contentType)) {
     const settingsPath = fileName ? join(dirPath, fileName) : join(dirPath, 'settings.json');
     if (existsSync(settingsPath)) {
-      payload.settings = JSON.parse(readMarkdown(settingsPath));
+      const settingsRaw = readMarkdown(settingsPath);
+      payload.settings = JSON.parse(settingsRaw);
+      rawFileContent = settingsRaw; // JSON.stringify 再整形ではなく生の内容を保持
     }
   }
 
@@ -143,6 +150,9 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean): Promise<string 
     await pushContent(result.content_id, convertedBody, [], contentType as 'page' | 'slide');
     console.log(`   ✅ Body updated with image URLs`);
   }
+
+  // スナップショット保存（ローカルファイルの生の内容をそのまま保存）
+  prepareSyncState(projectRoot, state, result.content_id, entry, rawFileContent ?? '');
 
   // 新規作成時: content_id をマニフェストに書き戻し
   if (result.created) {
@@ -184,6 +194,7 @@ export async function pushCommand(
 
   // フォルダ push 後の content_id マップ（dirPath → content_id）
   const folderContentIds = new Map<string, string>();
+  const state = isPreview ? { version: 1 as const, contents: {} } : readState(dir);
 
   let succeeded = 0;
   let failed = 0;
@@ -200,7 +211,7 @@ export async function pushCommand(
         }
       }
 
-      const contentId = await pushSingle(entry, isPreview);
+      const contentId = await pushSingle(entry, isPreview, dir, state);
       if (contentId) {
         succeeded++;
         // フォルダの content_id を記録
@@ -214,6 +225,11 @@ export async function pushCommand(
       console.error(`   ❌${entry.meta.title}: ${err instanceof Error ? err.message : err}`);
       failed++;
     }
+  }
+
+  // state.json を1回だけ書き込み
+  if (!isPreview && succeeded > 0) {
+    writeState(dir, state);
   }
 
   console.log(`\n${isPreview ? 'ℹ️Preview complete' : '✅ Push complete'}`);

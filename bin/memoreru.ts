@@ -13,9 +13,11 @@ import { createRequire } from 'module';
 import { Command } from 'commander';
 import { configure } from '../src/lib/api.js';
 import { printLogo } from '../src/lib/logo.js';
+import { diffCommand } from '../src/commands/diff.js';
 import { initCommand } from '../src/commands/init.js';
 import { pushCommand } from '../src/commands/push.js';
 import { pullCommand } from '../src/commands/pull.js';
+import { statusCommand } from '../src/commands/status.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../../package.json') as { version: string };
@@ -29,8 +31,8 @@ program
   .option('--api-key <key>', 'API key (overrides MEMORERU_API_KEY env var)')
   .option('--url <url>', 'Base URL (default: https://memoreru.com)')
   .hook('preAction', (thisCommand, actionCommand) => {
-    // init はローカル操作のみ — APIキー不要
-    if (actionCommand.name() === 'init') return;
+    // ローカル操作のみのコマンド — APIキー不要
+    if (['init', 'status', 'diff'].includes(actionCommand.name())) return;
 
     const opts = thisCommand.opts();
     const apiKey = opts.apiKey || process.env.MEMORERU_API_KEY;
@@ -62,6 +64,17 @@ program
   .description('Push local content to Memoreru')
   .option('-n, --preview', 'Preview changes without applying')
   .action(pushCommand);
+
+program
+  .command('status [directory]')
+  .description('Show local changes since last pull/push')
+  .action(statusCommand);
+
+program
+  .command('diff [directory]')
+  .description('Show diff of modified files')
+  .option('-f, --file <filename>', 'Show diff for a specific file only')
+  .action(diffCommand);
 
 // 引数なし → ロゴ + ヘルプ
 if (process.argv.length <= 2) {
