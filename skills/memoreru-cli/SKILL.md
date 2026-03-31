@@ -1,6 +1,6 @@
 ---
 name: memoreru-cli
-description: Memoreru CLI syncs local files (Markdown, CSV) with Memoreru. Init to generate templates, pull to download, push to upload. Use for memoreru, init, pull, push, content sync, file sync, download, upload operations.
+description: Memoreru CLI syncs local files (Markdown, CSV) with Memoreru. Init to generate templates, pull to download, push to upload. Use for memoreru, init, pull, push, content sync, file sync, download, upload operations. Status to check changes, diff to review before pushing.
 ---
 
 # Memoreru CLI
@@ -11,9 +11,11 @@ description: Memoreru CLI syncs local files (Markdown, CSV) with Memoreru. Init 
 memoreru init [dir] [--type page|table|slide|folder]
 memoreru pull [dir] [--preview]
 memoreru push [dir] [--preview]
+memoreru status [dir]
+memoreru diff [dir] [--file <filename>]
 ```
 
-Auth: `MEMORERU_API_KEY` env var or `--api-key` flag.
+Auth: `MEMORERU_API_KEY` env var or `--api-key` flag. Status and diff work offline without an API key.
 
 ## .memoreru.json Manifest
 
@@ -49,11 +51,14 @@ See [references/properties.md](references/properties.md) for all properties (whe
 # Create → edit → upload
 memoreru init ./docs --type page
 # Edit the .md file
+memoreru status ./docs          # Check what changed
+memoreru diff ./docs            # Review diffs
 memoreru push ./docs
 
 # Download → edit → re-upload
 memoreru pull ./docs
 # Edit the .md file
+memoreru status ./docs          # Check what changed
 memoreru push ./docs
 ```
 
@@ -62,3 +67,4 @@ memoreru push ./docs
 - Default scope is private (no accidental public exposure)
 - Pull supports: page, slide, table, folder, view, graph, dashboard
 - Images: auto-uploaded on push, hash-based diff download on pull
+- Status/diff use `.memoreru/` snapshots (add to `.gitignore`)

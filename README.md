@@ -116,8 +116,9 @@ memoreru diff --file readme.md         # Show diff for a specific file
 ```
 
 ```diff
---- a/readme.md (synced 2026-03-31)
-+++ b/readme.md (local)
+diff --git a/readme.md b/readme.md
+--- a/readme.md
++++ b/readme.md
 @@ -3,7 +3,7 @@
  ## Section 1
 
@@ -127,7 +128,7 @@ memoreru diff --file readme.md         # Show diff for a specific file
  ## Section 2
 ```
 
-No API key required — compares against locally stored snapshots.
+No API key required — compares against locally stored snapshots. Output is `git apply` compatible.
 
 ## 🎯 File Structure
 

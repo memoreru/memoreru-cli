@@ -1,6 +1,6 @@
 ---
 name: memoreru-cli
-description: Memoreru CLI でローカルファイル（Markdown, CSV）と Memoreru を同期する。init でテンプレート生成、pull でダウンロード、push でアップロード。memoreru, init, pull, push, コンテンツ同期, ファイル同期, ダウンロード, アップロード に関する操作で使用する。
+description: Memoreru CLI でローカルファイル（Markdown, CSV）と Memoreru を同期する。init でテンプレート生成、pull でダウンロード、push でアップロード。status で変更確認、diff で差分表示。memoreru, init, pull, push, status, diff, コンテンツ同期, ファイル同期, ダウンロード, アップロード に関する操作で使用する。
 ---
 
 # Memoreru CLI
@@ -11,9 +11,11 @@ description: Memoreru CLI でローカルファイル（Markdown, CSV）と Memo
 memoreru init [dir] [--type page|table|slide|folder]
 memoreru pull [dir] [--preview]
 memoreru push [dir] [--preview]
+memoreru status [dir]
+memoreru diff [dir] [--file <filename>]
 ```
 
-認証: `MEMORERU_API_KEY` 環境変数 または `--api-key` フラグ。
+認証: `MEMORERU_API_KEY` 環境変数 または `--api-key` フラグ。status / diff は API キー不要（オフライン動作）。
 
 ## .memoreru.json マニフェスト
 
@@ -49,11 +51,14 @@ memoreru push [dir] [--preview]
 # 新規作成 → 編集 → アップロード
 memoreru init ./docs --type page
 # .md を編集
+memoreru status ./docs          # 変更を確認
+memoreru diff ./docs            # 差分を確認
 memoreru push ./docs
 
 # ダウンロード → 編集 → 再アップロード
 memoreru pull ./docs
 # .md を編集
+memoreru status ./docs          # 変更を確認
 memoreru push ./docs
 ```
 
@@ -62,3 +67,4 @@ memoreru push ./docs
 - scope デフォルトは private（意図せず公開されない）
 - pull 対応: page, slide, table, folder, view, graph, dashboard
 - 画像は push 時に自動アップロード、pull 時にハッシュ差分で効率ダウンロード
+- status / diff は `.memoreru/` のスナップショットを使用（`.gitignore` に追加推奨）

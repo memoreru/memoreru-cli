@@ -116,8 +116,9 @@ memoreru diff --file readme.md         # 特定ファイルの差分のみ表示
 ```
 
 ```diff
---- a/readme.md (synced 2026-03-31)
-+++ b/readme.md (local)
+diff --git a/readme.md b/readme.md
+--- a/readme.md
++++ b/readme.md
 @@ -3,7 +3,7 @@
  ## セクション1
 
@@ -127,7 +128,7 @@ memoreru diff --file readme.md         # 特定ファイルの差分のみ表示
  ## セクション2
 ```
 
-API キー不要 — ローカルに保存されたスナップショットと比較します。
+API キー不要 — ローカルに保存されたスナップショットと比較します。出力は `git apply` 互換です。
 
 ## 🎯 ファイル構成
 
