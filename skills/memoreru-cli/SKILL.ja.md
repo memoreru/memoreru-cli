@@ -22,13 +22,14 @@ memoreru diff [dir] [--file <filename>]
 ```json
 {
   "readme.md": { "content_type": "page", "title": "README" },
-  "data.csv": { "content_type": "table", "title": "データ一覧" },
+  "tasks.csv": { "content_type": "table", "title": "タスク一覧" },
   "docs": { "content_type": "folder", "title": "ドキュメント" }
 }
 ```
 
 - `content_type` — **必須**。folder, page, table, slide, view, graph, dashboard
 - `content_id` — 初回 push 後に自動書き戻し。手動設定不要
+- `columns` — テーブルのみ。push 後に自動設定。`{ id, name, type }` の配列でカラムを一意に識別
 - `scope` — public, team, private（デフォルト: private）
 - `team_id` — scope が team の場合に必要
 
@@ -43,7 +44,7 @@ memoreru diff [dir] [--file <filename>]
 
 - **フォルダ**: サブディレクトリ。中身は自動スキャンされない（子ディレクトリに `.memoreru.json` を置いて明示的に定義する）
 - **ページ / スライド**: `.md`。画像は `./images/` に配置、`![alt](./images/file.png)` で参照
-- **テーブル**: `.csv`（ヘッダ行 + データ行）。カラム型は自動推定
+- **テーブル**: `.csv`（ヘッダ行 + データ行）。カラム型は自動推定。初回 push 後に `row_id` と `version` 列が先頭に追加される（元ファイルは `.bak.csv` にバックアップ）。2回目以降は変更行のみ送信。version による競合検知で共同編集に対応
 
 ## ワークフロー
 
@@ -68,3 +69,5 @@ memoreru push ./docs
 - pull 対応: page, slide, table, folder, view, graph, dashboard
 - 画像は push 時に自動アップロード、pull 時にハッシュ差分で効率ダウンロード
 - status / diff は `.memoreru/` のスナップショットを使用（`.gitignore` に追加推奨）
+- テーブル push は差分送信（変更行のみ）。version 不一致は競合として検知 — `memoreru pull` で解消
+- `.bak.csv` はバージョン管理不要なら `.gitignore` に追加

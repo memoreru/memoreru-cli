@@ -162,6 +162,10 @@ export interface UpsertResult {
   created: boolean;
   uploadedCount: number;
   skippedCount: number;
+  columns?: { column_name: string; column_id: string; column_type: string }[];
+  row_ids?: string[];
+  row_versions?: number[];
+  conflicts?: { row_id: string; expected_version: number; current_version: number }[];
 }
 
 export async function upsertContent(input: UpsertInput | Record<string, unknown>): Promise<UpsertResult> {
@@ -208,8 +212,10 @@ export async function pullTableData(tableId: string) {
 
     for (const row of rawRows) {
       const converted: Record<string, unknown> = {};
+      if (row.row_id) converted.row_id = row.row_id;
+      if (row.version != null) converted.version = row.version;
       for (const [key, value] of Object.entries(row)) {
-        if (key === 'row_id' || key === 'display_order' || key === 'cell_settings') continue;
+        if (key === 'row_id' || key === 'version' || key === 'display_order' || key === 'cell_settings') continue;
         converted[idToName.get(key) ?? key] = value;
       }
       allRows.push(converted);

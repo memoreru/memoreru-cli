@@ -2,8 +2,8 @@
  * memoreru pull — Memoreru → ローカル
  */
 
-import { existsSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { existsSync, mkdirSync, copyFileSync } from 'fs';
+import { basename, join } from 'path';
 import {
   downloadImage,
   getTenantInfo,
@@ -13,7 +13,7 @@ import {
   pullTableData,
 } from '../lib/api.js';
 import type { ContentSummary } from '../lib/api.js';
-import { computeFileHash, saveImage, writeMarkdown } from '../lib/files.js';
+import { computeFileHash, readMarkdown, saveImage, writeMarkdown } from '../lib/files.js';
 import {
   buildMetaFromEntry,
   getBodyPath,
@@ -22,6 +22,7 @@ import {
   updateManifestEntry,
   type MemoreruMeta,
 } from '../lib/manifest.js';
+import { hasRowIdColumn, writeRowIdCsv } from '../lib/row-id-csv.js';
 import { scanDirectory } from '../lib/scan.js';
 import type { ScanEntry } from '../lib/scan.js';
 import { prepareSyncState, readState, writeState, type StateFile } from '../lib/state.js';
@@ -105,6 +106,9 @@ async function pullTable(entry: ScanEntry, isPreview: boolean, projectRoot: stri
     return true;
   }
 
+  // row_id + version を含む CSV を生成
+  const rowIds = rows.map(r => String(r.row_id ?? ''));
+  const rowVersions = rows.map(r => Number(r.version) || 1);
   const header = columns.map(c => escapeCsvField(c.name)).join(',');
   const dataLines = rows.map(row =>
     columns.map(c => escapeCsvField(String(row[c.name] ?? ''))).join(','),
@@ -115,14 +119,30 @@ async function pullTable(entry: ScanEntry, isPreview: boolean, projectRoot: stri
   console.log(`   ${csvPath} (${columns.length} columns, ${rows.length} rows)`);
 
   if (!isPreview) {
-    writeMarkdown(csvPath, csv);
+    // 初回のみバックアップ作成（既存ファイルが row_id なしの場合）
+    if (existsSync(csvPath) && fileName) {
+      const existing = readMarkdown(csvPath);
+      if (!hasRowIdColumn(existing)) {
+        const bakPath = join(dirPath, fileName.replace(/\.csv$/, '.bak.csv'));
+        if (!existsSync(bakPath)) {
+          copyFileSync(csvPath, bakPath);
+          console.log(`   📋 Backup: ${fileName} → ${basename(bakPath)}`);
+        }
+      }
+    }
+
+    // row_id + version 付き CSV を書き出し
+    writeRowIdCsv(csvPath, csv, rowIds, rowVersions);
+
     if (fileName) {
       updateManifestEntry(dirPath, fileName, {
-        columns: columns.map(c => ({ name: c.name, type: c.type })),
+        columns: columns.map(c => ({ id: c.id, name: c.name, type: c.type })),
       });
     }
     if (meta.content_id) {
-      prepareSyncState(projectRoot, state, meta.content_id, entry, csv);
+      // スナップショットは書き出し後のCSVで保存
+      const finalCsv = readMarkdown(csvPath);
+      prepareSyncState(projectRoot, state, meta.content_id, entry, finalCsv);
     }
   }
 

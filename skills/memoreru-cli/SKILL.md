@@ -22,13 +22,14 @@ Auth: `MEMORERU_API_KEY` env var or `--api-key` flag. Status and diff work offli
 ```json
 {
   "readme.md": { "content_type": "page", "title": "README" },
-  "data.csv": { "content_type": "table", "title": "Data" },
+  "tasks.csv": { "content_type": "table", "title": "Tasks" },
   "docs": { "content_type": "folder", "title": "Documentation" }
 }
 ```
 
 - `content_type` — **Required.** folder, page, table, slide, view, graph, dashboard
 - `content_id` — Auto-set after first push. No manual setup needed
+- `columns` — Table only. Auto-set after push. Array of `{ id, name, type }` for unique column references
 - `scope` — public, team, private (default: private)
 - `team_id` — Required when scope is team
 
@@ -43,7 +44,7 @@ See [references/properties.md](references/properties.md) for all properties (whe
 
 - **Folder**: Subdirectory. Contents are not auto-scanned (place `.memoreru.json` in child directories to explicitly define)
 - **Page / Slide**: `.md`. Place images in `./images/`, reference as `![alt](./images/file.png)`
-- **Table**: `.csv` (header row + data rows). Column types are auto-inferred
+- **Table**: `.csv` (header row + data rows). Column types are auto-inferred. After first push, `row_id` and `version` columns are prepended (original backed up as `.bak.csv`). Subsequent pushes send only changed rows. Version-based conflict detection for collaborative editing
 
 ## Workflow
 
@@ -68,3 +69,5 @@ memoreru push ./docs
 - Pull supports: page, slide, table, folder, view, graph, dashboard
 - Images: auto-uploaded on push, hash-based diff download on pull
 - Status/diff use `.memoreru/` snapshots (add to `.gitignore`)
+- Table push: diff-based (only changed rows). Conflict detected by version mismatch — resolve with `memoreru pull`
+- Add `.bak.csv` to `.gitignore` if backup files are not needed in version control

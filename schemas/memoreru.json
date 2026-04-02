@@ -197,6 +197,29 @@
           "type": "boolean",
           "default": false,
           "description": "翻訳版を自動生成する"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "type"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "カラムID（push後に自動書き戻し）"
+              },
+              "name": {
+                "type": "string",
+                "description": "カラム名"
+              },
+              "type": {
+                "type": "string",
+                "description": "データ型（string, number, date 等）"
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "テーブルのカラム定義（content_type が table の場合のみ。push後に自動書き戻し）"
         }
       },
       "additionalProperties": false

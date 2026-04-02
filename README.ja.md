@@ -13,6 +13,7 @@
 - 🔍 **Diff** — push 前にファイル単位の差分を確認
 - 🖼️ **画像** — push 時に自動アップロード、pull 時に変更分だけダウンロード
 - 🏷️ **豊富なメタデータ** — カテゴリ、タグ、サムネイル、日時、場所など
+- 🛡️ **安全な同期** — 複数人で同じテーブルを編集しても競合を検知
 - 🤖 **Claude Code** — CLI スキルと MCP で AI アシスト
 
 ## 🪄 クイックスタート
@@ -139,7 +140,8 @@ my-project/
 ├── .memoreru.json          # マニフェスト
 ├── .memoreru/              # 同期状態（自動生成、.gitignore に追加推奨）
 ├── readme.md               # ページ
-├── members.csv             # テーブル
+├── tasks.csv             # テーブル（push 後は row_id + version 付き）
+├── tasks.bak.csv         # 元の CSV バックアップ（初回 push 時に自動生成）
 ├── docs/                   # フォルダ
 │   ├── .memoreru.json      # docs/ 内のマニフェスト
 │   └── guide.md
@@ -159,9 +161,9 @@ my-project/
     "content_type": "page",
     "title": "プロジェクト README"
   },
-  "members.csv": {
+  "tasks.csv": {
     "content_type": "table",
-    "title": "メンバー一覧"
+    "title": "タスク一覧"
   },
   "docs": {
     "content_type": "folder",
@@ -170,7 +172,7 @@ my-project/
 }
 ```
 
-初回 push 後、`content_id` が自動的に書き戻されます:
+初回 push 後、ID が自動的に書き戻されます:
 
 ```json
 {
@@ -178,9 +180,21 @@ my-project/
     "content_id": "q589jor87vmbnyylb8091cik",
     "content_type": "page",
     "title": "プロジェクト README"
+  },
+  "tasks.csv": {
+    "content_id": "dyn8dapi7ckz8vvic8indjnc",
+    "content_type": "table",
+    "title": "タスク一覧",
+    "columns": [
+      { "id": "col_abc123", "name": "タイトル", "type": "string" },
+      { "id": "col_def456", "name": "ステータス", "type": "string" },
+      { "id": "col_ghi789", "name": "優先度", "type": "string" }
+    ]
   }
 }
 ```
+
+テーブルの場合、`columns` にカラムIDが書き戻されます。ビュー・グラフがカラムを参照する際の一意なIDです。
 
 ### プロパティ
 
@@ -265,15 +279,48 @@ my-project/
 
 </details>
 
+<details>
+<summary><strong>テーブルカラム（自動管理）</strong></summary>
+
+| プロパティ | 説明 |
+|-----------|------|
+| `columns` | カラム定義（table のみ）。push 後に自動設定。`{ id, name, type }` の配列。 |
+
+カラムIDにより、ビュー・グラフからの参照が一意に保たれます。カラム名を変更するには、CSV のヘッダーと `.memoreru.json` の `columns[].name` を両方更新してください。
+
+</details>
+
 ### テーブル CSV
 
+**初回 push 前**（元の CSV）:
+
 ```csv
-名前,年齢,メール
-田中太郎,30,tanaka@example.com
-山田花子,25,yamada@example.com
+タイトル,ステータス,優先度
+CI構築,完了,高
+ドキュメント作成,進行中,中
 ```
 
-カラム型は push 時に自動推定されます。
+**初回 push 後**（row_id + version が追加され、元ファイルは `.bak.csv` にバックアップ）:
+
+```csv
+row_id,version,タイトル,ステータス,優先度
+row_abc123,1,CI構築,完了,高
+row_def456,1,ドキュメント作成,進行中,中
+```
+
+- `row_id` と `version` はシステム管理列（先頭2列）
+- カラム型は push 時に自動推定
+- 2回目以降の push では変更行のみ送信（差分push）
+- version 不一致で競合を検知（共同編集時の安全性）
+
+**新しい行を追加** — `row_id` と `version` は空のまま:
+
+```csv
+row_id,version,タイトル,ステータス,優先度
+row_abc123,1,CI構築,完了,高
+row_def456,1,ドキュメント作成,進行中,中
+,,テスト追加,未着手,低
+```
 
 ### 画像
 

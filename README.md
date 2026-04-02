@@ -13,6 +13,7 @@ Sync local Markdown, CSV, and JSON files with [Memoreru](https://memoreru.com) �
 - 🔍 **Diff** — Show file-level diffs before pushing
 - 🖼️ **Images** — Auto-upload on push, download only changes on pull
 - 🏷️ **Rich Metadata** — Categories, tags, thumbnails, dates, locations, and more
+- 🛡️ **Safe Sync** — Detects conflicts when multiple users edit the same table
 - 🤖 **Claude Code** — CLI skill and MCP for AI-assisted workflows
 
 ## 🪄 Quick Start
@@ -139,7 +140,8 @@ my-project/
 ├── .memoreru.json          # Manifest
 ├── .memoreru/              # Sync state (auto-generated, add to .gitignore)
 ├── readme.md               # Page
-├── members.csv             # Table
+├── tasks.csv             # Table (with row_id + version after push)
+├── tasks.bak.csv         # Original CSV backup (auto-generated on first push)
 ├── docs/                   # Folder
 │   ├── .memoreru.json      # Manifest for docs/
 │   └── guide.md
@@ -159,9 +161,9 @@ my-project/
     "content_type": "page",
     "title": "Project README"
   },
-  "members.csv": {
+  "tasks.csv": {
     "content_type": "table",
-    "title": "Members"
+    "title": "Tasks"
   },
   "docs": {
     "content_type": "folder",
@@ -170,7 +172,7 @@ my-project/
 }
 ```
 
-After the first push, `content_id` is automatically written back:
+After the first push, IDs are automatically written back:
 
 ```json
 {
@@ -178,9 +180,21 @@ After the first push, `content_id` is automatically written back:
     "content_id": "q589jor87vmbnyylb8091cik",
     "content_type": "page",
     "title": "Project README"
+  },
+  "tasks.csv": {
+    "content_id": "dyn8dapi7ckz8vvic8indjnc",
+    "content_type": "table",
+    "title": "Tasks",
+    "columns": [
+      { "id": "col_abc123", "name": "Title", "type": "string" },
+      { "id": "col_def456", "name": "Status", "type": "string" },
+      { "id": "col_ghi789", "name": "Priority", "type": "string" }
+    ]
   }
 }
 ```
+
+For tables, `columns` maps each column name to its unique server-side ID. This ensures views and graphs referencing these columns survive table re-creation.
 
 ### Properties
 
@@ -265,15 +279,48 @@ Only `content_type` is required. All other properties are optional.
 
 </details>
 
+<details>
+<summary><strong>Table Columns (auto-managed)</strong></summary>
+
+| Property | Description |
+|-------|-------------|
+| `columns` | Column definitions (table only). Auto-set after push. Array of `{ id, name, type }`. |
+
+Column IDs ensure unique references from views and graphs. To rename a column, update both the CSV header and `columns[].name` in `.memoreru.json`.
+
+</details>
+
 ### Table CSV
 
+**Before first push** (original CSV):
+
 ```csv
-Name,Age,Email
-John Doe,30,john@example.com
-Jane Smith,25,jane@example.com
+Title,Status,Priority
+Setup CI,Done,High
+Write docs,In Progress,Medium
 ```
 
-Column types are auto-inferred on push.
+**After first push** (row_id + version added, original backed up as `.bak.csv`):
+
+```csv
+row_id,version,Title,Status,Priority
+row_abc123,1,Setup CI,Done,High
+row_def456,1,Write docs,In Progress,Medium
+```
+
+- `row_id` and `version` are system-managed columns (first two columns)
+- Column types are auto-inferred on push
+- Only changed rows are sent on subsequent pushes (diff-based)
+- Version mismatch triggers conflict detection for collaborative editing
+
+**Adding a new row** — leave `row_id` and `version` empty:
+
+```csv
+row_id,version,Title,Status,Priority
+row_abc123,1,Setup CI,Done,High
+row_def456,1,Write docs,In Progress,Medium
+,,Add tests,Todo,Low
+```
 
 ### Images
 

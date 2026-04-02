@@ -63,3 +63,22 @@
 | `is_locked` | boolean | Lock editing (default: `false`) |
 | `auto_summary` | boolean | Auto-generate summary (default: `false`) |
 | `auto_translate` | boolean | Auto-generate translations (default: `false`) |
+
+## Table Columns (auto-managed)
+
+| Property | Type | Description |
+|-------|------|-------------|
+| `columns` | object[] | Column definitions (table only). Auto-set after push. Each: `{ id, name, type }`. |
+
+Column IDs ensure unique references from views and graphs. To rename a column, update both the CSV header and `columns[].name`.
+
+## Table CSV Format
+
+After first push, `row_id` and `version` columns are prepended to the CSV. The original is backed up as `.bak.csv`.
+
+| Column | Description |
+|--------|-------------|
+| `row_id` | Row identifier (auto-assigned, leave empty for new rows) |
+| `version` | Optimistic lock version (auto-incremented on each update) |
+
+Only changed rows are sent on push (diff-based). Version mismatch triggers conflict detection.
