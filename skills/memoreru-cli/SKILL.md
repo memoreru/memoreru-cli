@@ -1,6 +1,6 @@
 ---
 name: memoreru-cli
-description: Memoreru CLI syncs local files (Markdown, CSV) with Memoreru. Init to generate templates, pull to download, push to upload. Use for memoreru, init, pull, push, content sync, file sync, download, upload operations. Status to check changes, diff to review before pushing.
+description: Memoreru CLI syncs local files (Markdown, CSV) with Memoreru. Login for browser auth, keys for API key management, init to generate templates, pull to download, push to upload. Use for memoreru, login, logout, keys, init, pull, push, content sync, file sync, download, upload, profile, auth operations. Status to check changes, diff to review before pushing.
 ---
 
 # Memoreru CLI
@@ -8,14 +8,21 @@ description: Memoreru CLI syncs local files (Markdown, CSV) with Memoreru. Init 
 ## Commands
 
 ```bash
+memoreru login [--profile <name>]
+memoreru logout [--profile <name>] [--all]
+memoreru keys create [--name <name>] [--read-only] [--profile <name>]
+memoreru keys list [--profile <name>]
+memoreru keys revoke <prefix> [--profile <name>]
 memoreru init [dir] [--type page|table|slide|folder]
-memoreru pull [dir] [--preview]
-memoreru push [dir] [--preview]
+memoreru pull [dir] [--preview] [--profile <name>]
+memoreru push [dir] [--preview] [--profile <name>]
 memoreru status [dir]
 memoreru diff [dir] [--file <filename>]
 ```
 
-Auth: `MEMORERU_API_KEY` env var or `--api-key` flag. Status and diff work offline without an API key.
+Auth: `memoreru login` + `memoreru keys create`, or `MEMORERU_API_KEY` env var / `--api-key` flag. Status and diff work offline.
+
+Auth resolution: `--api-key` > `MEMORERU_API_KEY` > `--profile` > `.memoreru-config.json` > default profile in `~/.config/memoreru/credentials.json`.
 
 ## .memoreru.json Manifest
 
@@ -49,6 +56,10 @@ See [references/properties.md](references/properties.md) for all properties (whe
 ## Workflow
 
 ```bash
+# First-time setup
+memoreru login
+memoreru keys create
+
 # Create → edit → upload
 memoreru init ./docs --type page
 # Edit the .md file
@@ -63,6 +74,16 @@ memoreru status ./docs          # Check what changed
 memoreru push ./docs
 ```
 
+## .memoreru-config.json
+
+Per-directory profile config. Place in content directories to auto-select the profile for push/pull:
+
+```json
+{
+  "profile": "work"
+}
+```
+
 ## Notes
 
 - Default scope is private (no accidental public exposure)
@@ -71,3 +92,4 @@ memoreru push ./docs
 - Status/diff use `.memoreru/` snapshots (add to `.gitignore`)
 - Table push: diff-based (only changed rows). Conflict detected by version mismatch — resolve with `memoreru pull`
 - Add `.bak.csv` to `.gitignore` if backup files are not needed in version control
+- Session stored at `~/.config/memoreru/credentials.json` (chmod 600)

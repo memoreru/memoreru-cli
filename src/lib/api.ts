@@ -7,7 +7,8 @@
 
 export interface ApiConfig {
   baseUrl: string;
-  apiKey: string;
+  apiKey?: string;
+  sessionCookie?: string;
 }
 
 let config: ApiConfig | null = null;
@@ -16,7 +17,7 @@ export function configure(cfg: ApiConfig) {
   config = cfg;
 }
 
-function getConfig(): ApiConfig {
+export function getConfig(): ApiConfig {
   if (!config) {
     throw new Error(
       'API not configured. Call configure() first or set MEMORERU_API_KEY environment variable.',
@@ -25,17 +26,27 @@ function getConfig(): ApiConfig {
   return config;
 }
 
+export function buildAuthHeaders(): Record<string, string> {
+  const { apiKey, sessionCookie } = getConfig();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  } else if (sessionCookie) {
+    headers['Cookie'] = `better-auth.session_token=${sessionCookie}`;
+  }
+  return headers;
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const { baseUrl, apiKey } = getConfig();
+  const { baseUrl } = getConfig();
   const maxRetries = 5;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const res = await fetch(`${baseUrl}${path}`, {
       method,
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: buildAuthHeaders(),
       body: body ? JSON.stringify(body) : undefined,
     });
 
@@ -271,10 +282,10 @@ export async function getTenantInfo(): Promise<{
 // =============================================================================
 
 export async function downloadImage(imageUrl: string): Promise<Buffer> {
-  const { baseUrl, apiKey } = getConfig();
-  const res = await fetch(`${baseUrl}${imageUrl}`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-  });
+  const { baseUrl } = getConfig();
+  const headers = buildAuthHeaders();
+  delete headers['Content-Type'];
+  const res = await fetch(`${baseUrl}${imageUrl}`, { headers });
   if (!res.ok) throw new Error(`Image download failed ${res.status}: ${imageUrl}`);
   const arrayBuffer = await res.arrayBuffer();
   return Buffer.from(arrayBuffer);

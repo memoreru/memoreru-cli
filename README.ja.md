@@ -8,6 +8,8 @@
 
 ## ✨ 機能
 
+- 🌐 **Login** — ブラウザ認証（CAPTCHA/2FA/OAuth 対応）
+- 🗝️ **Keys** — CLI から API キーの作成・一覧・無効化
 - 🐣 **Init** — プロジェクトのテンプレートを生成
 - 🤲 **Pull** — Memoreru のコンテンツをローカルにダウンロード
 - 🚀 **Push** — ローカルファイルを Memoreru にアップロード
@@ -30,29 +32,52 @@ npm install -g @memoreru-sdk/cli
 
 ## 🌱 セットアップ
 
-### 1. API キーの取得
+### 方法 A: CLI ログイン（推奨）
+
+```bash
+memoreru login
+```
+
+ブラウザが開き認証します。ログイン後、API キーを作成:
+
+```bash
+memoreru keys create
+```
+
+> 💡 API キーの利用にはライトプラン以上が必要です。14日間の無料トライアルでもお試しいただけます。
+
+### 方法 B: 手動で API キーを設定
 
 1. [Memoreru](https://memoreru.com) にログイン
 2. **設定 > セキュリティ > API キー** を開く
 3. アクセス権限を **読み取り+書き込み** にしてキーを作成
 
-> 💡 API キーの利用にはライトプラン以上が必要です。14日間の無料トライアルでもお試しいただけます。
-
-### 2. API キーの設定
-
 ```bash
 export MEMORERU_API_KEY=your-api-key
-```
-
-または `--api-key` フラグで指定:
-
-```bash
-memoreru --api-key your-api-key pull ./my-data
 ```
 
 これで `memoreru init`、`memoreru pull`、`memoreru push` が使えます。
 
 ## 💡 使い方
+
+### Login / Logout
+
+```bash
+memoreru login                        # ブラウザ認証
+memoreru login --profile work         # 名前付きプロファイルに保存
+memoreru logout                       # default プロファイルを削除
+memoreru logout --all                 # 全プロファイルを削除
+```
+
+### Keys
+
+```bash
+memoreru keys create                          # API キー作成（読み取り+書き込み）
+memoreru keys create --name "my-key"          # 名前を指定
+memoreru keys create --read-only              # 読み取り専用
+memoreru keys list                            # 一覧表示
+memoreru keys revoke mk_xxxxx                 # プレフィックスで無効化
+```
 
 ### Init
 
@@ -336,9 +361,11 @@ row_def456,1,ドキュメント作成,進行中,中
 ## 🎨 オプション
 
 ```
---api-key <key>   API キー（MEMORERU_API_KEY より優先）
---help            ヘルプ表示
---version         バージョン表示
+--api-key <key>     API キー（MEMORERU_API_KEY より優先）
+--profile <name>    プロファイル名
+--url <url>         ベースURL（デフォルト: https://memoreru.com）
+--help              ヘルプ表示
+--version           バージョン表示
 ```
 
 **環境変数:**
@@ -350,6 +377,26 @@ row_def456,1,ドキュメント作成,進行中,中
 | `MEMORERU_URL` | ベースURL（デフォルト: `https://memoreru.com`） |
 
 > 💡 **専用テナント利用者向け:** `MEMORERU_TENANT` を設定すると、誤ったテナントへの操作を防止できます。pull/push の前にテナントを検証し、不一致の場合はエラーで停止します。
+
+### 認証の優先順位
+
+1. `--api-key` フラグ
+2. `MEMORERU_API_KEY` 環境変数
+3. `--profile` フラグ
+4. `.memoreru-config.json` のプロファイル
+5. `~/.config/memoreru/credentials.json` の default プロファイル
+
+### .memoreru-config.json
+
+ディレクトリ単位のプロファイル設定:
+
+```json
+{
+  "profile": "work"
+}
+```
+
+`memoreru push ./my-dir` 実行時、そのディレクトリの `.memoreru-config.json` からプロファイル（API キー）を自動解決します。
 
 ## 🤖 Claude Code 連携
 

@@ -8,6 +8,8 @@ Sync local Markdown, CSV, and JSON files with [Memoreru](https://memoreru.com) �
 
 ## ✨ Features
 
+- 🌐 **Login** — Browser-based login (CAPTCHA/2FA/OAuth supported)
+- 🗝️ **Keys** — Create, list, and revoke API keys from the CLI
 - 🐣 **Init** — Generate project templates
 - 🤲 **Pull** — Download Memoreru content to local files
 - 🚀 **Push** — Upload local files to Memoreru
@@ -30,29 +32,52 @@ npm install -g @memoreru-sdk/cli
 
 ## 🌱 Setup
 
-### 1. Get an API Key
+### Option A: CLI Login (Recommended)
+
+```bash
+memoreru login
+```
+
+Opens your browser for authentication. After login, create an API key:
+
+```bash
+memoreru keys create
+```
+
+> 💡 API keys require the Light plan or above. A 14-day free trial is available.
+
+### Option B: Manual API Key
 
 1. Log in to [Memoreru](https://memoreru.com)
 2. Go to **Settings > Security > API Keys**
 3. Create a key with **Read + Write** access
 
-> 💡 API keys require the Light plan or above. A 14-day free trial is available.
-
-### 2. Set Your API Key
-
 ```bash
 export MEMORERU_API_KEY=your-api-key
-```
-
-Or use the `--api-key` flag:
-
-```bash
-memoreru --api-key your-api-key pull ./my-data
 ```
 
 That's it! Now you can use `memoreru init`, `memoreru pull` and `memoreru push`.
 
 ## 💡 Usage
+
+### Login / Logout
+
+```bash
+memoreru login                        # Browser login
+memoreru login --profile work         # Save as named profile
+memoreru logout                       # Clear default profile
+memoreru logout --all                 # Clear all profiles
+```
+
+### Keys
+
+```bash
+memoreru keys create                          # Create API key (read + write)
+memoreru keys create --name "my-key"          # With custom name
+memoreru keys create --read-only              # Read-only key
+memoreru keys list                            # List all keys
+memoreru keys revoke mk_xxxxx                 # Revoke by prefix
+```
 
 ### Init
 
@@ -336,9 +361,11 @@ row_def456,1,Write docs,In Progress,Medium
 ## 🎨 Options
 
 ```
---api-key <key>   API key (overrides MEMORERU_API_KEY)
---help            Show help
---version         Show version
+--api-key <key>     API key (overrides MEMORERU_API_KEY)
+--profile <name>    Credential profile name
+--url <url>         Base URL (default: https://memoreru.com)
+--help              Show help
+--version           Show version
 ```
 
 **Environment variables:**
@@ -350,6 +377,26 @@ row_def456,1,Write docs,In Progress,Medium
 | `MEMORERU_URL` | Base URL (default: `https://memoreru.com`) |
 
 > 💡 **Dedicated tenant users:** Set `MEMORERU_TENANT` to prevent accidental pushes to the wrong tenant. The CLI verifies the tenant before each pull/push and stops if it doesn't match.
+
+### Auth Resolution Order
+
+1. `--api-key` flag
+2. `MEMORERU_API_KEY` env var
+3. `--profile` flag
+4. `.memoreru-config.json` profile
+5. Default profile in `~/.config/memoreru/credentials.json`
+
+### .memoreru-config.json
+
+Per-directory profile config for multi-account workflows:
+
+```json
+{
+  "profile": "work"
+}
+```
+
+When running `memoreru push ./my-dir`, the CLI reads `.memoreru-config.json` from that directory to determine which profile (and API key) to use.
 
 ## 🤖 Claude Code Integration
 

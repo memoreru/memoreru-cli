@@ -1,6 +1,6 @@
 ---
 name: memoreru-cli
-description: Memoreru CLI でローカルファイル（Markdown, CSV）と Memoreru を同期する。init でテンプレート生成、pull でダウンロード、push でアップロード。status で変更確認、diff で差分表示。memoreru, init, pull, push, status, diff, コンテンツ同期, ファイル同期, ダウンロード, アップロード に関する操作で使用する。
+description: Memoreru CLI でローカルファイル（Markdown, CSV）と Memoreru を同期する。login でブラウザ認証、keys で API キー管理、init でテンプレート生成、pull でダウンロード、push でアップロード。status で変更確認、diff で差分表示。memoreru, login, logout, keys, init, pull, push, status, diff, コンテンツ同期, ファイル同期, ダウンロード, アップロード, プロファイル, 認証 に関する操作で使用する。
 ---
 
 # Memoreru CLI
@@ -8,14 +8,21 @@ description: Memoreru CLI でローカルファイル（Markdown, CSV）と Memo
 ## コマンド
 
 ```bash
+memoreru login [--profile <name>]
+memoreru logout [--profile <name>] [--all]
+memoreru keys create [--name <name>] [--read-only] [--profile <name>]
+memoreru keys list [--profile <name>]
+memoreru keys revoke <prefix> [--profile <name>]
 memoreru init [dir] [--type page|table|slide|folder]
-memoreru pull [dir] [--preview]
-memoreru push [dir] [--preview]
+memoreru pull [dir] [--preview] [--profile <name>]
+memoreru push [dir] [--preview] [--profile <name>]
 memoreru status [dir]
 memoreru diff [dir] [--file <filename>]
 ```
 
-認証: `MEMORERU_API_KEY` 環境変数 または `--api-key` フラグ。status / diff は API キー不要（オフライン動作）。
+認証: `memoreru login` + `memoreru keys create`、または `MEMORERU_API_KEY` 環境変数 / `--api-key` フラグ。status / diff はオフライン動作。
+
+認証の優先順位: `--api-key` > `MEMORERU_API_KEY` > `--profile` > `.memoreru-config.json` > `~/.config/memoreru/credentials.json` の default プロファイル。
 
 ## .memoreru.json マニフェスト
 
@@ -49,6 +56,10 @@ memoreru diff [dir] [--file <filename>]
 ## ワークフロー
 
 ```bash
+# 初回セットアップ
+memoreru login
+memoreru keys create
+
 # 新規作成 → 編集 → アップロード
 memoreru init ./docs --type page
 # .md を編集
@@ -63,6 +74,16 @@ memoreru status ./docs          # 変更を確認
 memoreru push ./docs
 ```
 
+## .memoreru-config.json
+
+ディレクトリ単位のプロファイル設定。コンテンツディレクトリに配置して push/pull のプロファイルを自動選択:
+
+```json
+{
+  "profile": "work"
+}
+```
+
 ## 注意事項
 
 - scope デフォルトは private（意図せず公開されない）
@@ -71,3 +92,4 @@ memoreru push ./docs
 - status / diff は `.memoreru/` のスナップショットを使用（`.gitignore` に追加推奨）
 - テーブル push は差分送信（変更行のみ）。version 不一致は競合として検知 — `memoreru pull` で解消
 - `.bak.csv` はバージョン管理不要なら `.gitignore` に追加
+- セッション保存先: `~/.config/memoreru/credentials.json`（パーミッション 600）

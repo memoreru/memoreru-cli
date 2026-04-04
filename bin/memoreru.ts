@@ -4,17 +4,26 @@
  * Memoreru CLI — sync local files with Memoreru
  *
  * Usage:
+ *   memoreru login [--profile <name>]
+ *   memoreru logout [--profile <name>] [--all]
+ *   memoreru keys create|list|revoke
  *   memoreru init [dir] [--type page|table|slide|folder]
- *   memoreru push [dir] [--dry-run]
- *   memoreru pull [dir] [--dry-run]
+ *   memoreru push [dir] [--preview] [--profile <name>]
+ *   memoreru pull [dir] [--preview] [--profile <name>]
+ *   memoreru status [dir]
+ *   memoreru diff [dir] [--file <filename>]
  */
 
 import { createRequire } from 'module';
 import { Command } from 'commander';
 import { configure } from '../src/lib/api.js';
+import { getProfile } from '../src/lib/credentials.js';
+import { readLocalConfig } from '../src/lib/local-config.js';
 import { printLogo } from '../src/lib/logo.js';
 import { diffCommand } from '../src/commands/diff.js';
 import { initCommand } from '../src/commands/init.js';
+import { keysCreateCommand, keysListCommand, keysRevokeCommand } from '../src/commands/keys.js';
+import { loginCommand, logoutCommand } from '../src/commands/login.js';
 import { pushCommand } from '../src/commands/push.js';
 import { pullCommand } from '../src/commands/pull.js';
 import { statusCommand } from '../src/commands/status.js';
@@ -30,22 +39,86 @@ program
   .version(version)
   .option('--api-key <key>', 'API key (overrides MEMORERU_API_KEY env var)')
   .option('--url <url>', 'Base URL (default: https://memoreru.com)')
+  .option('--profile <name>', 'Credential profile name')
   .hook('preAction', (thisCommand, actionCommand) => {
-    // ローカル操作のみのコマンド — APIキー不要
-    if (['init', 'status', 'diff'].includes(actionCommand.name())) return;
+    const name = actionCommand.name();
+
+    // ローカル操作のみのコマンド — 認証不要
+    if (['init', 'status', 'diff', 'login', 'logout', 'keys'].includes(name)) return;
 
     const opts = thisCommand.opts();
-    const apiKey = opts.apiKey || process.env.MEMORERU_API_KEY;
     const baseUrl = (opts.url || process.env.MEMORERU_URL || 'https://memoreru.com').replace(/\/$/, '');
 
-    if (!apiKey) {
-      console.error('Error: API key is required.');
-      console.error('  Set MEMORERU_API_KEY environment variable or use --api-key flag.');
-      process.exit(1);
+    // keys サブコマンドはセッション認証必須
+    const isKeysCommand = actionCommand.parent?.name() === 'keys';
+    if (isKeysCommand) {
+      const profileName = opts.profile || 'default';
+      const profile = getProfile(profileName);
+      if (!profile?.cookie) {
+        console.error('Error: セッションが必要です。先に memoreru login を実行してください。');
+        process.exit(1);
+      }
+      configure({ baseUrl: profile.base_url || baseUrl, sessionCookie: profile.cookie });
+      return;
     }
 
-    configure({ baseUrl, apiKey });
+    // push/pull: --api-key → MEMORERU_API_KEY → --profile → .memoreru-config.json → default
+    const apiKey = opts.apiKey || process.env.MEMORERU_API_KEY;
+    if (apiKey) {
+      configure({ baseUrl, apiKey });
+      return;
+    }
+
+    // プロファイル解決: --profile → .memoreru-config.json → default
+    const dir = actionCommand.args?.[0] as string | undefined;
+    const profileName = opts.profile || readLocalConfig(dir)?.profile || 'default';
+    const profile = getProfile(profileName);
+    if (profile?.cookie) {
+      configure({ baseUrl: profile.base_url || baseUrl, sessionCookie: profile.cookie });
+      return;
+    }
+
+    console.error('Error: 認証情報が必要です。');
+    console.error('  memoreru login を実行するか、');
+    console.error('  MEMORERU_API_KEY 環境変数または --api-key フラグを使用してください。');
+    process.exit(1);
   });
+
+program
+  .command('login')
+  .description('Log in to Memoreru')
+  .option('--profile <name>', 'Profile name to save (default: "default")')
+  .option('--port <port>', 'Force specific localhost port for callback')
+  .action((opts, cmd) => loginCommand({ ...cmd.parent?.opts(), ...opts }));
+
+program
+  .command('logout')
+  .description('Clear stored session')
+  .option('--profile <name>', 'Profile to logout (default: "default")')
+  .option('--all', 'Clear all profiles')
+  .action(logoutCommand);
+
+const keys = program.command('keys').description('Manage API keys');
+
+keys
+  .command('create')
+  .description('Create a new API key')
+  .option('--name <name>', 'Key name (default: "CLI YYYY-MM-DD")')
+  .option('--read-only', 'Read-only scope (api:read only)')
+  .option('--profile <name>', 'Session profile to use')
+  .action(keysCreateCommand);
+
+keys
+  .command('list')
+  .description('List API keys')
+  .option('--profile <name>', 'Session profile to use')
+  .action(keysListCommand);
+
+keys
+  .command('revoke <prefix>')
+  .description('Revoke an API key by prefix or ID')
+  .option('--profile <name>', 'Session profile to use')
+  .action(keysRevokeCommand);
 
 program
   .command('init [directory]')
@@ -57,12 +130,14 @@ program
   .command('pull [directory]')
   .description('Pull content from Memoreru to local files')
   .option('-n, --preview', 'Preview changes without applying')
+  .option('--profile <name>', 'Credential profile to use')
   .action(pullCommand);
 
 program
   .command('push [directory]')
   .description('Push local content to Memoreru')
   .option('-n, --preview', 'Preview changes without applying')
+  .option('--profile <name>', 'Credential profile to use')
   .action(pushCommand);
 
 program
