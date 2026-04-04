@@ -138,13 +138,21 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean, projectRoot: str
         payload.csv_data = csvContent;
       }
     }
-    // columns があればサーバーに送信（ID書き戻し用）
+    // columns があればサーバーに送信（ID書き戻し用 + 型指定用）
     if (Array.isArray(meta.columns) && meta.columns.length > 0) {
-      payload.column_ids = Object.fromEntries(
-        (meta.columns as { id: string; name: string }[])
-          .filter(c => c.id && c.name)
-          .map(c => [c.name, c.id])
+      const columns = meta.columns as { id?: string; name: string; type?: string }[];
+      const columnIds = Object.fromEntries(
+        columns.filter(c => c.id && c.name).map(c => [c.name, c.id!])
       );
+      if (Object.keys(columnIds).length > 0) {
+        payload.column_ids = columnIds;
+      }
+      const columnTypes = Object.fromEntries(
+        columns.filter(c => c.type && c.name).map(c => [c.name, c.type!])
+      );
+      if (Object.keys(columnTypes).length > 0) {
+        payload.column_types = columnTypes;
+      }
     }
   } else if (['view', 'graph', 'dashboard'].includes(contentType)) {
     const settingsPath = fileName ? join(dirPath, fileName) : join(dirPath, 'settings.json');
