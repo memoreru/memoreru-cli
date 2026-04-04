@@ -76,11 +76,13 @@ program
   .option('-f, --file <filename>', 'Show diff for a specific file only')
   .action(diffCommand);
 
-// 引数なし → ロゴ + ヘルプ
+// 引数なし → ロゴ + ヘルプを表示して正常終了
 if (process.argv.length <= 2) {
   console.log();
   printLogo();
   console.log();
+  program.outputHelp();
+  process.exit(0);
 }
 
 program.parse();

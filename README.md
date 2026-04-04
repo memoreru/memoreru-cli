@@ -4,6 +4,8 @@
 
 Sync local Markdown, CSV, and JSON files with [Memoreru](https://memoreru.com) — your content knowledge base.
 
+![Memoreru CLI](screenshot.png)
+
 ## ✨ Features
 
 - 🐣 **Init** — Generate project templates

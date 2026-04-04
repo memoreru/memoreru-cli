@@ -4,6 +4,8 @@
 
 ローカルの Markdown、CSV、JSON ファイルと [Memoreru](https://memoreru.com) を同期するコマンドラインツール。
 
+![Memoreru CLI](screenshot.png)
+
 ## ✨ 機能
 
 - 🐣 **Init** — プロジェクトのテンプレートを生成
