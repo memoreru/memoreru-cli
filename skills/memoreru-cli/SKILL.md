@@ -7,6 +7,8 @@ description: Memoreru CLI syncs local files (Markdown, CSV) with Memoreru. Login
 
 ## Commands
 
+> `mem` is a shorthand alias for `memoreru`. Both work identically.
+
 ```bash
 memoreru login [--profile <name>]
 memoreru logout [--profile <name>] [--all]

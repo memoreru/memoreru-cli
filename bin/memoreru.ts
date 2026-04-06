@@ -4,7 +4,7 @@
  * Memoreru CLI — sync local files with Memoreru
  *
  * Usage:
- *   memoreru login [--profile <name>]
+ *   memoreru login [--profile <name>]       (or: mem login)
  *   memoreru logout [--profile <name>] [--all]
  *   memoreru keys create|list|revoke
  *   memoreru init [dir] [--type page|table|slide|folder]
@@ -12,6 +12,8 @@
  *   memoreru pull [dir] [--preview] [--profile <name>]
  *   memoreru status [dir]
  *   memoreru diff [dir] [--file <filename>]
+ *
+ * The "mem" shorthand is available as an alias for "memoreru".
  */
 
 import { createRequire } from 'module';
@@ -34,8 +36,9 @@ const { version } = require('../../package.json') as { version: string };
 const program = new Command();
 
 program
-  .name('memoreru')
+  .name(process.argv[1]?.endsWith('/mem') || process.argv[1]?.endsWith('\\mem') ? 'mem' : 'memoreru')
   .description('Sync local files with Memoreru')
+  .addHelpText('after', '\nAlias: "mem" can be used as a shorthand for "memoreru"')
   .version(version)
   .option('--api-key <key>', 'API key (overrides MEMORERU_API_KEY env var)')
   .option('--url <url>', 'Base URL (default: https://memoreru.com)')

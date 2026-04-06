@@ -7,6 +7,8 @@ description: Memoreru CLI でローカルファイル（Markdown, CSV）と Memo
 
 ## コマンド
 
+> `mem` は `memoreru` の省略形エイリアスです。どちらでも同じように動作します。
+
 ```bash
 memoreru login [--profile <name>]
 memoreru logout [--profile <name>] [--all]

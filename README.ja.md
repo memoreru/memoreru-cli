@@ -30,6 +30,8 @@ npx @memoreru-sdk/cli --help
 npm install -g @memoreru-sdk/cli
 ```
 
+> 💡 `mem` は `memoreru` の省略形エイリアスです。どちらでも同じように動作します。
+
 ## 🌱 セットアップ
 
 ### 方法 A: CLI ログイン（推奨）
