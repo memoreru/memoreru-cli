@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-ローカルの Markdown、CSV、JSON ファイルと [Memoreru](https://memoreru.com) を同期するコマンドラインツール。
+ローカルの Markdown、CSV、JSON ファイルと [Memoreru®](https://memoreru.com) を同期するコマンドラインツール。
 
 ![Memoreru CLI](screenshot.png)
 
@@ -454,6 +454,10 @@ const result = await upsertContent(input);
 ## 🛸 ライセンス
 
 MIT
+
+## 商標
+
+「Memoreru」は日本国内において当事業者の登録商標です（第9類、第42類 / 出願番号: 商願2026-6250）。
 
 ---
 
