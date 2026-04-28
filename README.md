@@ -457,7 +457,7 @@ MIT
 
 ## Trademark
 
-"Memoreru" is a registered trademark in Japan (Class 9, Class 42 / Application No. 2026-6250).
+"Memoreru" is a registered trademark in Japan (Class 9, Class 42 / Registration No. 7037589).
 
 ---
 
