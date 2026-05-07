@@ -158,11 +158,6 @@
           "default": true,
           "description": "AIクローラーを許可する"
         },
-        "can_hatena_comment": {
-          "type": "boolean",
-          "default": true,
-          "description": "はてなブックマークのコメントを許可する"
-        },
         "has_password": {
           "type": "boolean",
           "default": false,

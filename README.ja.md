@@ -291,7 +291,6 @@ my-project/
 | `access_level` | `open`, `login_required`, `followers_only`（デフォルト: `open`） |
 | `can_embed` | 埋め込み許可（デフォルト: `true`） |
 | `can_ai_crawl` | AIクローラー許可（デフォルト: `true`） |
-| `can_hatena_comment` | はてなブックマークのコメント許可（デフォルト: `true`） |
 | `has_password` | パスワード保護（デフォルト: `false`） |
 
 </details>

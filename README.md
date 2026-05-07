@@ -291,7 +291,6 @@ Only `content_type` is required. All other properties are optional.
 | `access_level` | `open`, `login_required`, `followers_only` (default: `open`) |
 | `can_embed` | Allow embedding (default: `true`) |
 | `can_ai_crawl` | Allow AI crawlers (default: `true`) |
-| `can_hatena_comment` | Allow Hatena Bookmark comments (default: `true`) |
 | `has_password` | Password protection (default: `false`) |
 
 </details>

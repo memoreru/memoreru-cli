@@ -52,7 +52,6 @@
 | `access_level` | string | `open` (anyone), `login_required` (logged-in users), `followers_only` (followers). Default: `open` |
 | `can_embed` | boolean | Allow embedding (default: `true`) |
 | `can_ai_crawl` | boolean | Allow AI crawlers (default: `true`) |
-| `can_hatena_comment` | boolean | Allow Hatena Bookmark comments (default: `true`) |
 | `has_password` | boolean | Password protection (default: `false`) |
 
 ## Other

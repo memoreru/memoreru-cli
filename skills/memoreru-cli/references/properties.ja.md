@@ -52,7 +52,6 @@
 | `access_level` | string | `open`（誰でも）, `login_required`（ログインユーザー）, `followers_only`（フォロワーのみ）。デフォルト: `open` |
 | `can_embed` | boolean | 埋め込み許可（デフォルト: `true`） |
 | `can_ai_crawl` | boolean | AIクローラー許可（デフォルト: `true`） |
-| `can_hatena_comment` | boolean | はてなブックマークのコメント許可（デフォルト: `true`） |
 | `has_password` | boolean | パスワード保護（デフォルト: `false`） |
 
 ## その他

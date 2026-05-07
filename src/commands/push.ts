@@ -62,7 +62,7 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean, projectRoot: str
     'location_lat', 'location_lng', 'location_address', 'location_name',
     'sources', 'system_type', 'custom_order', 'team_id',
     'scheduled_at', 'expires_at',
-    'discovery', 'access_level', 'can_embed', 'can_ai_crawl', 'can_hatena_comment', 'has_password',
+    'discovery', 'access_level', 'can_embed', 'can_ai_crawl', 'has_password',
     'is_suspended', 'is_archived', 'is_pinned', 'is_locked', 'auto_summary', 'auto_translate',
   ];
   for (const key of metaFields) {

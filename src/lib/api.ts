@@ -160,7 +160,6 @@ export interface UpsertInput {
   access_level?: 'open' | 'login_required' | 'followers_only';
   can_embed?: boolean;
   can_ai_crawl?: boolean;
-  can_hatena_comment?: boolean;
   has_password?: boolean;
   is_pinned?: boolean;
   is_locked?: boolean;
