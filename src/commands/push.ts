@@ -2,15 +2,26 @@
  * memoreru push — ローカル → Memoreru
  */
 
-import { existsSync, copyFileSync } from 'fs';
+import { copyFileSync, existsSync } from 'fs';
 import { basename, dirname, join } from 'path';
 import { pushContent, uploadImage, upsertContent } from '../lib/api.js';
 import { readImageAsBase64, readMarkdown } from '../lib/files.js';
 import { updateManifestEntry } from '../lib/manifest.js';
-import { computeRowDiff, extractRowMeta, hasRowIdColumn, writeRowIdCsv } from '../lib/row-id-csv.js';
-import { scanDirectory } from '../lib/scan.js';
+import {
+  computeRowDiff,
+  extractRowMeta,
+  hasRowIdColumn,
+  writeRowIdCsv,
+} from '../lib/row-id-csv.js';
 import type { ScanEntry } from '../lib/scan.js';
-import { prepareSyncState, readSnapshot, readState, writeState, type StateFile } from '../lib/state.js';
+import { scanDirectory } from '../lib/scan.js';
+import {
+  prepareSyncState,
+  readSnapshot,
+  readState,
+  type StateFile,
+  writeState,
+} from '../lib/state.js';
 import { verifyTenant } from '../lib/tenant.js';
 
 /** Markdown から画像パスを抽出 */
@@ -30,13 +41,23 @@ function extractLocalPaths(markdown: string): string[] {
 /** push 時のソート優先度 */
 function typePriority(type: string): number {
   const order: Record<string, number> = {
-    folder: 0, table: 1, page: 2, slide: 2,
-    view: 3, graph: 4, dashboard: 5,
+    folder: 0,
+    table: 1,
+    page: 2,
+    slide: 2,
+    view: 3,
+    graph: 4,
+    dashboard: 5,
   };
   return order[type] ?? 2;
 }
 
-async function pushSingle(entry: ScanEntry, isPreview: boolean, projectRoot: string, state: StateFile): Promise<string | null> {
+async function pushSingle(
+  entry: ScanEntry,
+  isPreview: boolean,
+  projectRoot: string,
+  state: StateFile
+): Promise<string | null> {
   const { dirPath, fileName, meta } = entry;
   const contentType = meta.content_type;
 
@@ -57,13 +78,38 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean, projectRoot: str
 
   // メタデータフィールドをコピー
   const metaFields = [
-    'description', 'description_expanded', 'emoji', 'slug', 'category', 'label',
-    'date_type', 'date_start', 'date_end',
-    'location_lat', 'location_lng', 'location_address', 'location_name',
-    'sources', 'system_type', 'custom_order', 'team_id',
-    'scheduled_at', 'expires_at',
-    'discovery', 'access_level', 'can_embed', 'can_ai_crawl', 'has_password',
-    'is_suspended', 'is_archived', 'is_pinned', 'is_locked', 'auto_summary', 'auto_translate',
+    'description',
+    'description_expanded',
+    'emoji',
+    'slug',
+    'category',
+    'label',
+    'date_type',
+    'date_start',
+    'date_end',
+    'location_lat',
+    'location_lng',
+    'location_address',
+    'location_name',
+    'sources',
+    'system_type',
+    'custom_order',
+    'team_id',
+    'template_group_tenant_id',
+    'template_group_id',
+    'scheduled_at',
+    'expires_at',
+    'discovery',
+    'access_level',
+    'can_embed',
+    'can_ai_crawl',
+    'has_password',
+    'is_suspended',
+    'is_archived',
+    'is_pinned',
+    'is_locked',
+    'auto_summary',
+    'auto_translate',
   ];
   for (const key of metaFields) {
     if (meta[key] !== undefined) payload[key] = meta[key];
@@ -213,13 +259,21 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean, projectRoot: str
     const bakPath = join(dirPath, fileName.replace(/\.csv$/, '.bak.csv'));
 
     // 初回のみバックアップ作成（.bak.csv が未存在の場合）
-    if (!existsSync(bakPath) && existsSync(csvPath) && rawFileContent && !hasRowIdColumn(rawFileContent)) {
+    if (
+      !existsSync(bakPath) &&
+      existsSync(csvPath) &&
+      rawFileContent &&
+      !hasRowIdColumn(rawFileContent)
+    ) {
       copyFileSync(csvPath, bakPath);
       console.log(`   📋 Backup: ${fileName} → ${basename(bakPath)}`);
     }
 
     // 差分pushの場合: 未変更行のID/versionをマージして完全なCSVを再構築
-    const unchangedRows = ((payload as Record<string, unknown>)._unchangedRows ?? []) as { rowId: string; version: number }[];
+    const unchangedRows = ((payload as Record<string, unknown>)._unchangedRows ?? []) as {
+      rowId: string;
+      version: number;
+    }[];
     const allRowIds = [...result.row_ids];
     const allVersions = [...(result.row_versions ?? result.row_ids.map(() => 1))];
 
@@ -269,7 +323,11 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean, projectRoot: str
             finalVersions.push(originalMeta.rowVersions[i] ?? 1);
           } else {
             const resultIdx = result.row_ids.indexOf(rid);
-            finalVersions.push(resultIdx >= 0 && result.row_versions ? result.row_versions[resultIdx] : (originalMeta.rowVersions[i] ?? 1));
+            finalVersions.push(
+              resultIdx >= 0 && result.row_versions
+                ? result.row_versions[resultIdx]
+                : (originalMeta.rowVersions[i] ?? 1)
+            );
           }
           finalDataLines.push(rowDataMap.get(rid)!);
           rowDataMap.delete(rid);
@@ -279,7 +337,9 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean, projectRoot: str
       for (const [rid, data] of rowDataMap) {
         finalRowIds.push(rid);
         const resultIdx = result.row_ids.indexOf(rid);
-        finalVersions.push(resultIdx >= 0 && result.row_versions ? result.row_versions[resultIdx] : 1);
+        finalVersions.push(
+          resultIdx >= 0 && result.row_versions ? result.row_versions[resultIdx] : 1
+        );
         finalDataLines.push(data);
       }
 
@@ -306,18 +366,28 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean, projectRoot: str
     // 競合レポート
     if (result.conflicts && result.conflicts.length > 0) {
       for (const c of result.conflicts) {
-        console.log(`   ⚠️ Conflict: ${c.row_id} (local v${c.expected_version}, server v${c.current_version}) — skipped`);
+        console.log(
+          `   ⚠️ Conflict: ${c.row_id} (local v${c.expected_version}, server v${c.current_version}) — skipped`
+        );
       }
       console.log(`   → Run 'memoreru pull' to resolve conflicts`);
     }
 
     const changedCount = result.row_ids.length - (result.conflicts?.length ?? 0);
     const unchangedCount = unchangedRows.length;
-    console.log(`   📊 ${changedCount} changed, ${unchangedCount} unchanged${result.conflicts?.length ? `, ${result.conflicts.length} conflicts` : ''}`);
+    console.log(
+      `   📊 ${changedCount} changed, ${unchangedCount} unchanged${result.conflicts?.length ? `, ${result.conflicts.length} conflicts` : ''}`
+    );
   }
 
   // スナップショット保存（row_id書き戻し後の最終状態で保存）
-  prepareSyncState(projectRoot, state, result.content_id, entry, finalCsvContent ?? rawFileContent ?? '');
+  prepareSyncState(
+    projectRoot,
+    state,
+    result.content_id,
+    entry,
+    finalCsvContent ?? rawFileContent ?? ''
+  );
 
   // 新規作成時: content_id をマニフェストに書き戻し
   if (result.created) {
@@ -335,10 +405,7 @@ async function pushSingle(entry: ScanEntry, isPreview: boolean, projectRoot: str
   return result.content_id;
 }
 
-export async function pushCommand(
-  directory: string | undefined,
-  options: { preview?: boolean },
-) {
+export async function pushCommand(directory: string | undefined, options: { preview?: boolean }) {
   const dir = directory || '.';
   const isPreview = options.preview ?? false;
 
