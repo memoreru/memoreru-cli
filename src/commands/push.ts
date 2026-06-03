@@ -184,9 +184,14 @@ async function pushSingle(
         payload.csv_data = csvContent;
       }
     }
-    // columns があればサーバーに送信（ID書き戻し用 + 型指定用）
+    // columns があればサーバーに送信（ID書き戻し用 + 型指定用 + 列設定）
     if (Array.isArray(meta.columns) && meta.columns.length > 0) {
-      const columns = meta.columns as { id?: string; name: string; type?: string }[];
+      const columns = meta.columns as {
+        id?: string;
+        name: string;
+        type?: string;
+        settings?: Record<string, unknown>;
+      }[];
       const columnIds = Object.fromEntries(
         columns.filter(c => c.id && c.name).map(c => [c.name, c.id!])
       );
@@ -198,6 +203,15 @@ async function pushSingle(
       );
       if (Object.keys(columnTypes).length > 0) {
         payload.column_types = columnTypes;
+      }
+      // 列設定（select 選択肢 / required / description）。サーバが key 照合で冪等反映する。
+      const columnSettings = Object.fromEntries(
+        columns
+          .filter(c => c.name && c.settings && typeof c.settings === 'object')
+          .map(c => [c.name, c.settings!])
+      );
+      if (Object.keys(columnSettings).length > 0) {
+        payload.column_settings = columnSettings;
       }
     }
   } else if (['view', 'graph', 'dashboard'].includes(contentType)) {
@@ -242,13 +256,20 @@ async function pushSingle(
     console.log(`   ✅ Body updated with image URLs`);
   }
 
-  // テーブル: columns を書き戻し（新規・既存問わず）
+  // テーブル: columns を書き戻し（新規・既存問わず）。
+  // 列設定 (settings: select 選択肢等) は人間が編集する正本なので、name 照合で保持する。
   if (contentType === 'table' && result.columns && result.columns.length > 0 && fileName) {
-    const columns = result.columns.map(c => ({
-      id: c.column_id,
-      name: c.column_name,
-      type: c.column_type,
-    }));
+    const settingsByName = new Map(
+      (Array.isArray(meta.columns) ? meta.columns : [])
+        .map(c => c as { name?: string; settings?: Record<string, unknown> })
+        .filter(c => c.name && c.settings)
+        .map(c => [c.name!, c.settings!])
+    );
+    const columns = result.columns.map(c => {
+      const settings = settingsByName.get(c.column_name);
+      const base = { id: c.column_id, name: c.column_name, type: c.column_type };
+      return settings ? { ...base, settings } : base;
+    });
     updateManifestEntry(dirPath, fileName, { columns });
   }
 

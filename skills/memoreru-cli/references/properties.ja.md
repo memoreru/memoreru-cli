@@ -67,9 +67,48 @@
 
 | プロパティ | 型 | 説明 |
 |-----------|-----|------|
-| `columns` | object[] | カラム定義（table のみ）。push 後に自動設定。各要素: `{ id, name, type }`。 |
+| `columns` | object[] | カラム定義（table のみ）。push 後に `id`/`type` が自動設定。各要素: `{ id, name, type, settings? }`。 |
 
 カラムIDにより、ビュー・グラフからの参照が一意に保たれます。カラム名を変更する場合は、CSV ヘッダーと `columns[].name` を両方更新してください。
+
+### `columns[].settings`（列設定・任意）
+
+CSV だけでは表現できない列設定を `settings` で宣言できます（push 時にサーバへ反映）。
+
+| プロパティ | 型 | 説明 |
+|-----------|-----|------|
+| `required` | boolean | 必須入力フラグ（新規列作成時に適用） |
+| `description` | string | 列の説明文（新規列作成時に適用） |
+| `options` | object[] | `select` / `multi_select` の選択肢。`{ key, value, color?, description? }` |
+
+`options[]` の各要素:
+
+| プロパティ | 型 | 説明 |
+|-----------|-----|------|
+| `key` | string | **必須**。システム保存値（列内で一意の安定キー）。env を跨いで不変 |
+| `value` | string | 表示値 |
+| `color` | string | バッジ色（プリセット色名 `gray`/`red`/`orange`/`yellow`/`green`/`blue`/`indigo`/`purple`/`pink`、または `#RRGGBB`） |
+| `description` | string | 選択肢の補助説明 |
+
+選択肢は `key` 照合で**冪等反映**されます（option_id はサーバ生成。マニフェストには保存しません）。
+push のたびに `options` の内容へ同期され、宣言から消えた `key` は削除されます。
+
+```json
+{
+  "id": "...",
+  "name": "ステータス",
+  "type": "select",
+  "settings": {
+    "required": true,
+    "description": "商談の進捗段階",
+    "options": [
+      { "key": "negotiating", "value": "商談中", "color": "blue" },
+      { "key": "won", "value": "受注", "color": "green" },
+      { "key": "lost", "value": "失注", "color": "gray" }
+    ]
+  }
+}
+```
 
 ## テーブル CSV 形式
 

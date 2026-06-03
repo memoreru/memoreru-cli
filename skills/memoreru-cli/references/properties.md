@@ -67,9 +67,48 @@
 
 | Property | Type | Description |
 |-------|------|-------------|
-| `columns` | object[] | Column definitions (table only). Auto-set after push. Each: `{ id, name, type }`. |
+| `columns` | object[] | Column definitions (table only). `id`/`type` auto-set after push. Each: `{ id, name, type, settings? }`. |
 
 Column IDs ensure unique references from views and graphs. To rename a column, update both the CSV header and `columns[].name`.
+
+### `columns[].settings` (column settings, optional)
+
+Declare column settings that a CSV alone cannot express via `settings` (applied to the server on push).
+
+| Property | Type | Description |
+|-----------|-----|------|
+| `required` | boolean | Required-input flag (applied when the column is created) |
+| `description` | string | Column description (applied when the column is created) |
+| `options` | object[] | Choices for `select` / `multi_select`. `{ key, value, color?, description? }` |
+
+Each `options[]` element:
+
+| Property | Type | Description |
+|-----------|-----|------|
+| `key` | string | **Required**. Stored value (stable key, unique within the column). Invariant across environments |
+| `value` | string | Display value |
+| `color` | string | Badge color (preset name `gray`/`red`/`orange`/`yellow`/`green`/`blue`/`indigo`/`purple`/`pink`, or `#RRGGBB`) |
+| `description` | string | Supplementary description for the choice |
+
+Choices are reconciled **idempotently by `key`** (option_id is server-generated and never stored in the manifest).
+On every push, options are synced to the declared set; keys removed from the declaration are deleted.
+
+```json
+{
+  "id": "...",
+  "name": "Status",
+  "type": "select",
+  "settings": {
+    "required": true,
+    "description": "Deal stage",
+    "options": [
+      { "key": "negotiating", "value": "Negotiating", "color": "blue" },
+      { "key": "won", "value": "Won", "color": "green" },
+      { "key": "lost", "value": "Lost", "color": "gray" }
+    ]
+  }
+}
+```
 
 ## Table CSV Format
 
