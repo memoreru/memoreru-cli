@@ -141,6 +141,10 @@ program
   .description('Push local content to Memoreru')
   .option('-n, --preview', 'Preview changes without applying')
   .option('--profile <name>', 'Credential profile to use')
+  .option(
+    '--delete-columns <ids>',
+    'Explicitly delete table columns by id (comma-separated). Subject to server-side permission'
+  )
   .action(pushCommand);
 
 program

@@ -56,7 +56,8 @@ async function pushSingle(
   entry: ScanEntry,
   isPreview: boolean,
   projectRoot: string,
-  state: StateFile
+  state: StateFile,
+  deleteColumnIds: string[] = []
 ): Promise<string | null> {
   const { dirPath, fileName, meta } = entry;
   const contentType = meta.content_type;
@@ -213,6 +214,10 @@ async function pushSingle(
       if (Object.keys(columnSettings).length > 0) {
         payload.column_settings = columnSettings;
       }
+    }
+    // 列の明示削除（適用可否はサーバのポリシー/権限に従う。所属外 id は無視される）
+    if (deleteColumnIds.length > 0) {
+      payload.delete_column_ids = deleteColumnIds;
     }
   } else if (['view', 'graph', 'dashboard'].includes(contentType)) {
     const settingsPath = fileName ? join(dirPath, fileName) : join(dirPath, 'settings.json');
@@ -426,11 +431,25 @@ async function pushSingle(
   return result.content_id;
 }
 
-export async function pushCommand(directory: string | undefined, options: { preview?: boolean }) {
+export async function pushCommand(
+  directory: string | undefined,
+  options: { preview?: boolean; deleteColumns?: string }
+) {
   const dir = directory || '.';
   const isPreview = options.preview ?? false;
+  // 明示削除する column_id（適用可否はサーバのポリシー/権限に従う）。
+  const deleteColumnIds = (options.deleteColumns ?? '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(s => s !== '');
 
   console.log(`\n🚀 memoreru push ${isPreview ? '(preview) ' : ''}${dir}`);
+  if (deleteColumnIds.length > 0) {
+    console.log(
+      `\n🗑️  --delete-columns: ${deleteColumnIds.join(', ')}\n` +
+        '    （明示指定した column_id のみ。適用可否はサーバのポリシーに従う）'
+    );
+  }
   await verifyTenant();
 
   const entries = scanDirectory(dir);
@@ -464,7 +483,7 @@ export async function pushCommand(directory: string | undefined, options: { prev
         }
       }
 
-      const contentId = await pushSingle(entry, isPreview, dir, state);
+      const contentId = await pushSingle(entry, isPreview, dir, state, deleteColumnIds);
       if (contentId) {
         succeeded++;
         // フォルダの content_id を記録

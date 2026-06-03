@@ -93,6 +93,26 @@ Each `options[]` element:
 Choices are reconciled **idempotently by `key`** (option_id is server-generated and never stored in the manifest).
 On every push, options are synced to the declared set; keys removed from the declaration are deleted.
 
+#### Updating existing columns (preserving content_id / column_id)
+
+Existing columns are identified by `columns[].id` and updated in place (id unchanged) on re-push:
+
+- Name / `required` / `description` changes
+- Type changes (**same storage only**, e.g. `string→select`, `number→rating`). Storage-incompatible type changes (e.g. `string→number`) are skipped for safety (use column delete + recreate).
+
+#### Deleting columns (`--delete-columns`)
+
+To delete columns, list their **column ids explicitly**. Removing a column from the CSV alone does not delete it (prevents accidental loss).
+
+```bash
+memoreru push --preview --delete-columns <id1>,<id2>   # preview which columns would be deleted
+memoreru push --delete-columns <id1>,<id2>             # delete then update
+```
+
+- Only the **explicitly listed column ids** (belonging to the content) are deleted.
+- Whether deletion is actually applied is subject to **server-side policy/permission** (ignored if not permitted).
+- A normal push (without `--delete-columns`) never deletes columns.
+
 ```json
 {
   "id": "...",
