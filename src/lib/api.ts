@@ -122,6 +122,17 @@ export async function pullContent(contentId: string, contentType: 'page' | 'slid
   return (res.data ?? res) as { body: string; images: PullImageMeta[] };
 }
 
+/**
+ * 単一 icon の入力（API/sync wire と対称な型タグ付き表現）。
+ * - emoji: 絵文字グリフ
+ * - image: 事前アップロード参照 `fileId`、または push 時インラインアップロードの `data`(base64)+`mimeType`
+ * - null: アイコンをクリア
+ */
+export type IconInput =
+  | { type: 'emoji'; emoji: string }
+  | { type: 'image'; fileId?: string; data?: string; mimeType?: string }
+  | null;
+
 export interface UpsertInput {
   content_id?: string;
   content_type: 'folder' | 'page' | 'table' | 'slide' | 'view' | 'graph' | 'dashboard';
@@ -138,7 +149,20 @@ export interface UpsertInput {
   tags?: string[];
   slug?: string;
   thumbnail?: { data: string; mimeType: string };
-  emoji?: string;
+  /**
+   * 単一 icon（絵文字 or 画像）。画像は事前アップロード参照 `fileId` か、push 時インライン
+   * アップロードの `data`(base64)+`mimeType`。null でクリア。
+   */
+  icon?: IconInput;
+  when?: { start?: string | null; end?: string | null; type?: string | null } | null;
+  where?: {
+    area1?: string | null;
+    area2?: string | null;
+    lat?: number | null;
+    lng?: number | null;
+    address?: string | null;
+    name?: string | null;
+  } | null;
   date_type?: string;
   date_start?: string;
   date_end?: string;

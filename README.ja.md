@@ -253,7 +253,7 @@ my-project/
 | プロパティ | 説明 |
 |-----------|------|
 | `thumbnail` | サムネイル画像パス（例: `./images/thumb.png`） |
-| `emoji` | 絵文字アイコン |
+| `icon` | アイコン（絵文字 or 画像）: `{"type":"emoji","emoji":"📝"}` / `{"type":"image","path":"./icon.png"}` / `null` |
 | `date_type` | `year`, `month`, `date`, `datetime` |
 | `date_start` | 開始日時（例: `2026-01-15`） |
 | `date_end` | 終了日時 |

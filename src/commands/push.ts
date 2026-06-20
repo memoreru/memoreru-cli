@@ -81,10 +81,11 @@ async function pushSingle(
   const metaFields = [
     'description',
     'description_expanded',
-    'emoji',
     'slug',
     'category',
     'label',
+    'when',
+    'where',
     'date_type',
     'date_start',
     'date_end',
@@ -233,6 +234,24 @@ async function pushSingle(
     const thumbImg = readImageAsBase64(dirPath, meta.thumbnail);
     if (thumbImg) {
       payload.thumbnail = { data: thumbImg.data, mimeType: thumbImg.mimeType };
+    }
+  }
+
+  // 単一 icon（絵文字 / 画像 / クリア）。manifest の画像 path は base64 にして送信、
+  // emoji / 事前アップロード fileId / null は素通し（undefined=変更しない）。
+  const manifestIcon = meta.icon as
+    | { type: 'emoji'; emoji: string }
+    | { type: 'image'; path?: string; fileId?: string }
+    | null
+    | undefined;
+  if (manifestIcon !== undefined) {
+    if (manifestIcon && manifestIcon.type === 'image' && manifestIcon.path) {
+      const iconImg = readImageAsBase64(dirPath, manifestIcon.path);
+      if (iconImg) {
+        payload.icon = { type: 'image', data: iconImg.data, mimeType: iconImg.mimeType };
+      }
+    } else {
+      payload.icon = manifestIcon;
     }
   }
 

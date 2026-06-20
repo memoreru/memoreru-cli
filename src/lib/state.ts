@@ -57,7 +57,7 @@ export interface StatusEntry {
 
 /** metaHash 計算対象のフィールド（安定した順序で列挙） */
 const META_HASH_FIELDS = [
-  'category', 'content_type', 'description', 'emoji', 'label', 'language',
+  'category', 'content_type', 'description', 'icon', 'label', 'language',
   'persons', 'publish_status', 'scope', 'slug', 'tags', 'title',
 ] as const;
 

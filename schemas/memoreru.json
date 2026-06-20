@@ -58,9 +58,30 @@
           "type": "string",
           "description": "ラベル"
         },
-        "emoji": {
-          "type": "string",
-          "description": "絵文字アイコン"
+        "icon": {
+          "description": "アイコン（絵文字 or 画像）。null でクリア。",
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["type", "emoji"],
+              "properties": {
+                "type": { "const": "emoji" },
+                "emoji": { "type": "string", "description": "絵文字グリフ（例: 📝）" }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": ["type"],
+              "properties": {
+                "type": { "const": "image" },
+                "path": { "type": "string", "description": "ローカル画像パス（push 時にアップロード）" },
+                "fileId": { "type": "string", "description": "アップロード済みファイルID（path の代替）" }
+              },
+              "additionalProperties": false
+            },
+            { "type": "null" }
+          ]
         },
         "slug": {
           "type": "string",
@@ -88,6 +109,29 @@
         "sources": {
           "type": "string",
           "description": "参考文献"
+        },
+        "when": {
+          "type": ["object", "null"],
+          "description": "日時（単一オブジェクト）。例: { \"start\": \"2026-01-15\", \"end\": null, \"type\": \"date\" }",
+          "properties": {
+            "start": { "type": ["string", "null"], "description": "開始日時（例: 2026, 2026-01, 2026-01-15, 2026-01-15T10:00:00）" },
+            "end": { "type": ["string", "null"], "description": "終了日時（start と同じ形式）" },
+            "type": { "type": ["string", "null"], "enum": ["year", "month", "date", "datetime", null], "description": "日時精度" }
+          },
+          "additionalProperties": false
+        },
+        "where": {
+          "type": ["object", "null"],
+          "description": "場所（単一オブジェクト）。area1/area2 は登録地点の id（tenant はサーバが解決）。",
+          "properties": {
+            "area1": { "type": ["string", "null"], "description": "地点 id（国レベル）" },
+            "area2": { "type": ["string", "null"], "description": "地点 id（地域レベル）" },
+            "lat": { "type": ["number", "null"], "description": "緯度（WGS84）" },
+            "lng": { "type": ["number", "null"], "description": "経度（WGS84）" },
+            "address": { "type": ["string", "null"], "description": "住所" },
+            "name": { "type": ["string", "null"], "description": "場所名" }
+          },
+          "additionalProperties": false
         },
         "date_type": {
           "type": "string",

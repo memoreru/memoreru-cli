@@ -20,7 +20,7 @@
 | プロパティ | 型 | 説明 |
 |-----------|-----|------|
 | `thumbnail` | string | サムネイル画像のパス（例: `./images/thumb.png`） |
-| `emoji` | string | 絵文字アイコン（例: `📝`） |
+| `icon` | object\|null | アイコン（絵文字 or 画像）: `{"type":"emoji","emoji":"📝"}` / `{"type":"image","path":"./icon.png"}` / `null` |
 | `date_type` | string | `year`, `month`, `date`, `datetime` |
 | `date_start` | string | 開始日時（例: `2026`, `2026-01`, `2026-01-15`, `2026-01-15T10:00:00`） |
 | `date_end` | string | 終了日時（date_start と同じ形式） |

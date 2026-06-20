@@ -253,7 +253,7 @@ Only `content_type` is required. All other properties are optional.
 | Property | Description |
 |-------|-------------|
 | `thumbnail` | Image path (e.g., `./images/thumb.png`) |
-| `emoji` | Emoji icon |
+| `icon` | Icon (emoji or image): `{"type":"emoji","emoji":"📝"}` / `{"type":"image","path":"./icon.png"}` / `null` |
 | `date_type` | `year`, `month`, `date`, `datetime` |
 | `date_start` | Start date (e.g., `2026-01-15`) |
 | `date_end` | End date |
