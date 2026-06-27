@@ -202,9 +202,104 @@ export interface UpsertResult {
   conflicts?: { row_id: string; expected_version: number; current_version: number }[];
 }
 
-export async function upsertContent(input: UpsertInput | Record<string, unknown>): Promise<UpsertResult> {
+async function upsertOnce(input: UpsertInput | Record<string, unknown>): Promise<UpsertResult> {
   const res = await request<Record<string, unknown>>('POST', '/api/sync/upsert', input);
   return (res.data ?? res) as UpsertResult;
+}
+
+/**
+ * 1 リクエストあたりの最大データ行数。大きい table の初回 push を分割して
+ * body 上限超過 (fetch failed) を避ける。先頭チャンクで作成、後続は同 content_id へ追記。
+ * append が既存行を消さないのはサーバ upsert の仕様 (CSV に無い行は削除しない)。
+ */
+const ROW_CHUNK_SIZE = 500;
+
+/** csv_data の物理行を header / データ行に分解 (CLI は 1 物理行 = 1 行モデル)。 */
+function splitCsvRows(csv: string): { header: string; dataRows: string[] } {
+  const lines = csv.split('\n');
+  return { header: lines[0] ?? '', dataRows: lines.slice(1).filter(l => l.trim() !== '') };
+}
+
+/**
+ * table コンテンツを push する。データ行が ROW_CHUNK_SIZE を超える場合は複数リクエストに
+ * 分割して送る (透過的: 戻り値の row_ids 等は分割前と同じ並びで集約して返す)。
+ */
+export async function upsertContent(
+  input: UpsertInput | Record<string, unknown>
+): Promise<UpsertResult> {
+  const rec = input as Record<string, unknown>;
+  const csv = typeof rec.csv_data === 'string' ? rec.csv_data : undefined;
+
+  if (rec.content_type !== 'table' || !csv) return upsertOnce(input);
+
+  const { header, dataRows } = splitCsvRows(csv);
+  if (dataRows.length <= ROW_CHUNK_SIZE) return upsertOnce(input);
+
+  const rowIds = Array.isArray(rec.row_ids) ? (rec.row_ids as (string | null)[]) : undefined;
+  const rowVersions = Array.isArray(rec.row_versions)
+    ? (rec.row_versions as (number | null)[])
+    : undefined;
+
+  const chunkCount = Math.ceil(dataRows.length / ROW_CHUNK_SIZE);
+  console.log(
+    `   ✂️  ${dataRows.length} 行を ${chunkCount} 分割で push (1 チャンク ${ROW_CHUNK_SIZE} 行)`
+  );
+
+  let contentId = typeof rec.content_id === 'string' ? rec.content_id : undefined;
+  let created = false;
+  let columns: UpsertResult['columns'];
+  const allRowIds: string[] = [];
+  const allRowVersions: number[] = [];
+  const allConflicts: NonNullable<UpsertResult['conflicts']> = [];
+
+  for (let i = 0; i < chunkCount; i++) {
+    const start = i * ROW_CHUNK_SIZE;
+    const slice = dataRows.slice(start, start + ROW_CHUNK_SIZE);
+    const chunkCsv = [header, ...slice].join('\n');
+
+    let chunkInput: Record<string, unknown>;
+    if (i === 0) {
+      // 先頭チャンク: 全メタデータ込みで作成/更新し、content_id / columns を確定する。
+      chunkInput = { ...rec, csv_data: chunkCsv };
+      if (rowIds) chunkInput.row_ids = rowIds.slice(start, start + ROW_CHUNK_SIZE);
+      if (rowVersions) chunkInput.row_versions = rowVersions.slice(start, start + ROW_CHUNK_SIZE);
+    } else {
+      // 後続チャンク: content_id へ追記。row_ids が無いと既存テーブルで skip されるため、
+      // 元の row_ids slice か、新規行なら null 配列を必ず渡して upsert モードに入れる。
+      chunkInput = {
+        content_id: contentId,
+        content_type: 'table',
+        title: rec.title,
+        csv_data: chunkCsv,
+        row_ids: rowIds ? rowIds.slice(start, start + ROW_CHUNK_SIZE) : slice.map(() => null),
+      };
+      if (rowVersions) chunkInput.row_versions = rowVersions.slice(start, start + ROW_CHUNK_SIZE);
+      // header→column_id の対応のみ再送 (列は先頭チャンクで作成済。名前照合でも足りるが冪等保険)。
+      if (rec.column_ids) chunkInput.column_ids = rec.column_ids;
+    }
+
+    const res = await upsertOnce(chunkInput);
+    if (i === 0) {
+      contentId = res.content_id;
+      created = res.created;
+      columns = res.columns;
+    }
+    if (res.row_ids) allRowIds.push(...res.row_ids);
+    if (res.row_versions) allRowVersions.push(...res.row_versions);
+    if (res.conflicts) allConflicts.push(...res.conflicts);
+    console.log(`      ✓ チャンク ${i + 1}/${chunkCount} (${slice.length} 行)`);
+  }
+
+  return {
+    content_id: contentId as string,
+    created,
+    uploadedCount: 0,
+    skippedCount: 0,
+    columns,
+    row_ids: allRowIds,
+    row_versions: allRowVersions,
+    conflicts: allConflicts,
+  };
 }
 
 // =============================================================================

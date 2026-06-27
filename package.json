@@ -1,6 +1,6 @@
 {
   "name": "@memoreru-sdk/cli",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Memoreru CLI — sync local files with Memoreru",
   "type": "module",
   "bin": {
