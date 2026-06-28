@@ -157,7 +157,13 @@ async function pushSingle(
       const csvContent = readMarkdown(csvPath);
       rawFileContent = csvContent;
 
-      if (hasRowIdColumn(csvContent)) {
+      const matchColumn = typeof meta.match_column === 'string' ? meta.match_column : undefined;
+      if (matchColumn) {
+        // 照合列 upsert: row_id を CSV に持たず、match 列の値で既存行を照合して update/create。
+        // 全行 + match_column を送る (大型 table は api 側で自動チャンク)。fresh clone でも動く。
+        payload.csv_data = csvContent;
+        payload.match_column = matchColumn;
+      } else if (hasRowIdColumn(csvContent)) {
         // row_id + version 付き CSV → 差分pushを試みる
         const snapshotCsv = meta.content_id
           ? readSnapshot(projectRoot, meta.content_id, 'table')
@@ -297,9 +303,16 @@ async function pushSingle(
     updateManifestEntry(dirPath, fileName, { columns });
   }
 
-  // テーブル: row_id + version 付き CSV で上書き + バックアップ
+  // テーブル: row_id + version 付き CSV で上書き + バックアップ。
+  // 照合列 upsert (match_column) では row_id を source に持たないため writeback しない。
   let finalCsvContent: string | undefined;
-  if (contentType === 'table' && result.row_ids && result.row_ids.length > 0 && fileName) {
+  if (
+    contentType === 'table' &&
+    result.row_ids &&
+    result.row_ids.length > 0 &&
+    fileName &&
+    typeof meta.match_column !== 'string'
+  ) {
     const csvPath = join(dirPath, fileName);
     const bakPath = join(dirPath, fileName.replace(/\.csv$/, '.bak.csv'));
 

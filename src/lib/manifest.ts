@@ -28,6 +28,11 @@ export interface MemoreruMeta {
   title: string;
   system_type?: string;
   custom_order?: number;
+  /**
+   * table: 照合列 upsert に使う列（列名 or column_id）。この列の値で既存行を照合して
+   * update/create する（row_id 不要）。列を rename する可能性があれば column_id 指定を推奨。
+   */
+  match_column?: string;
   [key: string]: unknown;
 }
 

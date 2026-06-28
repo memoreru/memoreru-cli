@@ -141,6 +141,11 @@ export interface UpsertInput {
   body?: string;
   images?: PushImage[];
   csv_data?: string;
+  /**
+   * 照合列 upsert: この列名(or column_id)の値で既存行を照合して update/create する。
+   * 指定すると row_id を CSV に持たずにキー一致で冪等更新できる（fresh clone でも動く）。
+   */
+  match_column?: string;
   settings?: Record<string, unknown>;
   description?: string;
   description_expanded?: boolean;
@@ -239,6 +244,8 @@ export async function upsertContent(
   const rowVersions = Array.isArray(rec.row_versions)
     ? (rec.row_versions as (number | null)[])
     : undefined;
+  // 照合列 upsert モード: 各チャンクは csv_data + match_column を送る (row_id 不要)。
+  const matchColumn = typeof rec.match_column === 'string' ? rec.match_column : undefined;
 
   const chunkCount = Math.ceil(dataRows.length / ROW_CHUNK_SIZE);
   console.log(
@@ -263,8 +270,18 @@ export async function upsertContent(
       chunkInput = { ...rec, csv_data: chunkCsv };
       if (rowIds) chunkInput.row_ids = rowIds.slice(start, start + ROW_CHUNK_SIZE);
       if (rowVersions) chunkInput.row_versions = rowVersions.slice(start, start + ROW_CHUNK_SIZE);
+    } else if (matchColumn) {
+      // 後続チャンク (照合列): content_id へ match_column で upsert (row_id 不要)。
+      chunkInput = {
+        content_id: contentId,
+        content_type: 'table',
+        title: rec.title,
+        csv_data: chunkCsv,
+        match_column: matchColumn,
+      };
+      if (rec.column_ids) chunkInput.column_ids = rec.column_ids;
     } else {
-      // 後続チャンク: content_id へ追記。row_ids が無いと既存テーブルで skip されるため、
+      // 後続チャンク (row_id): content_id へ追記。row_ids が無いと既存テーブルで skip されるため、
       // 元の row_ids slice か、新規行なら null 配列を必ず渡して upsert モードに入れる。
       chunkInput = {
         content_id: contentId,
