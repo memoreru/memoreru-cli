@@ -4,7 +4,13 @@
 
 import { copyFileSync, existsSync } from 'fs';
 import { basename, dirname, join } from 'path';
-import { pushContent, uploadImage, upsertContent } from '../lib/api.js';
+import {
+  deleteTableRows,
+  fetchTableRowIds,
+  pushContent,
+  uploadImage,
+  upsertContent,
+} from '../lib/api.js';
 import { readImageAsBase64, readMarkdown } from '../lib/files.js';
 import { updateManifestEntry } from '../lib/manifest.js';
 import {
@@ -57,7 +63,8 @@ async function pushSingle(
   isPreview: boolean,
   projectRoot: string,
   state: StateFile,
-  deleteColumnIds: string[] = []
+  deleteColumnIds: string[] = [],
+  prune = false
 ): Promise<string | null> {
   const { dirPath, fileName, meta } = entry;
   const contentType = meta.content_type;
@@ -436,6 +443,35 @@ async function pushSingle(
     console.log(
       `   📊 ${changedCount} changed, ${unchangedCount} unchanged${result.conflicts?.length ? `, ${result.conflicts.length} conflicts` : ''}`
     );
+
+  }
+
+  // prune: ローカル CSV に無いサーバ行を削除（全投影テーブルの full-sync）。
+  // 変更行の有無に関わらず実行する（version 同期で全行 unchanged でも prune は必要）。
+  // 安全策: row_id 列を持つ table のみ（match_column / row_id 無しは全削除事故防止で除外）。
+  if (
+    (prune || meta.prune === true) &&
+    contentType === 'table' &&
+    fileName &&
+    typeof meta.match_column !== 'string'
+  ) {
+    const prunePath = join(dirPath, fileName);
+    const pruneCsv = existsSync(prunePath) ? readMarkdown(prunePath) : '';
+    if (pruneCsv && hasRowIdColumn(pruneCsv)) {
+      const localIds = new Set(
+        extractRowMeta(pruneCsv).rowIds.filter((r): r is string => !!r)
+      );
+      if (localIds.size > 0) {
+        const serverIds = await fetchTableRowIds(result.content_id);
+        const stale = serverIds.filter(id => !localIds.has(id));
+        if (stale.length > 0) {
+          const n = await deleteTableRows(result.content_id, stale);
+          console.log(`   🗑️  prune: ${n} 行を削除（ローカル CSV に無いサーバ行）`);
+        } else {
+          console.log('   🗑️  prune: 削除対象なし');
+        }
+      }
+    }
   }
 
   // スナップショット保存（row_id書き戻し後の最終状態で保存）
@@ -465,10 +501,12 @@ async function pushSingle(
 
 export async function pushCommand(
   directory: string | undefined,
-  options: { preview?: boolean; deleteColumns?: string }
+  options: { preview?: boolean; deleteColumns?: string; prune?: boolean }
 ) {
   const dir = directory || '.';
   const isPreview = options.preview ?? false;
+  // --prune: テーブルで「ローカル CSV に無いサーバ行」を削除する full-sync（全投影 feed 用）
+  const doPrune = (options.prune ?? false) && !isPreview;
   // 明示削除する column_id（適用可否はサーバのポリシー/権限に従う）。
   const deleteColumnIds = (options.deleteColumns ?? '')
     .split(',')
@@ -515,7 +553,7 @@ export async function pushCommand(
         }
       }
 
-      const contentId = await pushSingle(entry, isPreview, dir, state, deleteColumnIds);
+      const contentId = await pushSingle(entry, isPreview, dir, state, deleteColumnIds, doPrune);
       if (contentId) {
         succeeded++;
         // フォルダの content_id を記録

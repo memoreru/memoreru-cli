@@ -145,6 +145,10 @@ program
     '--delete-columns <ids>',
     'Explicitly delete table columns by id (comma-separated). Subject to server-side permission'
   )
+  .option(
+    '--prune',
+    'Full-sync tables: delete server rows whose row_id is not in the local CSV. Subject to server-side permission'
+  )
   .action(pushCommand);
 
 program

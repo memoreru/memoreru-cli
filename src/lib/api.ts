@@ -375,6 +375,45 @@ export async function pullTableData(tableId: string) {
   return { columns, rows: allRows };
 }
 
+/**
+ * テーブルのサーバ側 row_id を全件取得する（prune 用）。
+ * pullTableData と同じページングだが row_id のみを集める軽量版。
+ */
+export async function fetchTableRowIds(tableId: string): Promise<string[]> {
+  const ids: string[] = [];
+  let page = 1;
+  const limit = 500;
+  while (true) {
+    const res = (await request<Record<string, unknown>>(
+      'GET',
+      `/api/contents/tables/${tableId}/rows?page=${page}&limit=${limit}`,
+    )) as Record<string, unknown>;
+    const data = (res.data ?? {}) as Record<string, unknown>;
+    const rawRows = (data.rows ?? []) as Record<string, unknown>[];
+    for (const row of rawRows) {
+      if (row.row_id) ids.push(String(row.row_id));
+    }
+    const pagination = (res.pagination ?? {}) as Record<string, unknown>;
+    const hasMore = pagination.has_more as boolean | undefined;
+    if (!hasMore && rawRows.length < limit) break;
+    page++;
+  }
+  return ids;
+}
+
+/**
+ * テーブル行の一括削除（prune 用）。サーバ上限 100/回に合わせてチャンク分割する。
+ */
+export async function deleteTableRows(tableId: string, rowIds: string[]): Promise<number> {
+  let deleted = 0;
+  for (let i = 0; i < rowIds.length; i += 100) {
+    const chunk = rowIds.slice(i, i + 100);
+    await request('DELETE', `/api/contents/tables/${tableId}/rows`, { row_ids: chunk });
+    deleted += chunk.length;
+  }
+  return deleted;
+}
+
 // =============================================================================
 // Content Listing
 // =============================================================================
