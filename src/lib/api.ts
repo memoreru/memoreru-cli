@@ -169,6 +169,7 @@ export interface UpsertInput {
    * アップロードの `data`(base64)+`mimeType`。null でクリア。
    */
   icon?: IconInput;
+  // 日時 / 場所は単一 when / where のみ（flat date_* / location_* は撤去済み）。
   when?: { start?: string | null; end?: string | null; type?: string | null } | null;
   where?: {
     area1?: string | null;
@@ -178,13 +179,6 @@ export interface UpsertInput {
     address?: string | null;
     name?: string | null;
   } | null;
-  date_type?: string;
-  date_start?: string;
-  date_end?: string;
-  location_lat?: number;
-  location_lng?: number;
-  location_address?: string;
-  location_name?: string;
   persons?: string[];
   sources?: string;
   language?: string;
