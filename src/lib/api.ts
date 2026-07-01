@@ -135,7 +135,17 @@ export type IconInput =
 
 export interface UpsertInput {
   content_id?: string;
-  content_type: 'folder' | 'page' | 'table' | 'slide' | 'view' | 'graph' | 'dashboard';
+  content_type:
+    | 'folder'
+    | 'page'
+    | 'table'
+    | 'slide'
+    | 'view'
+    | 'graph'
+    | 'dashboard'
+    | 'screen'
+    | 'report'
+    | 'workflow';
   title: string;
   scope?: 'public' | 'team' | 'private';
   body?: string;

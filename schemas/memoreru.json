@@ -24,7 +24,18 @@
         },
         "content_type": {
           "type": "string",
-          "enum": ["folder", "page", "table", "slide", "view", "graph", "dashboard"],
+          "enum": [
+            "folder",
+            "page",
+            "table",
+            "slide",
+            "view",
+            "graph",
+            "dashboard",
+            "screen",
+            "report",
+            "workflow"
+          ],
           "description": "コンテンツタイプ"
         },
         "title": {
@@ -254,6 +265,36 @@
               "type": {
                 "type": "string",
                 "description": "データ型（string, number, date 等）"
+              },
+              "settings": {
+                "type": "object",
+                "description": "カラム設定（select 選択肢 / required / description 等）。name 照合で冪等反映される",
+                "properties": {
+                  "required": {
+                    "type": "boolean",
+                    "description": "入力必須"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "カラムの説明"
+                  },
+                  "options": {
+                    "type": "array",
+                    "description": "select / multi_select の選択肢",
+                    "items": {
+                      "type": "object",
+                      "required": ["key", "value"],
+                      "properties": {
+                        "key": { "type": "string" },
+                        "value": { "type": "string" },
+                        "color": { "type": "string" },
+                        "description": { "type": "string" }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": true
               }
             },
             "additionalProperties": false

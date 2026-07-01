@@ -54,6 +54,9 @@ function typePriority(type: string): number {
     view: 3,
     graph: 4,
     dashboard: 5,
+    screen: 6,
+    report: 7,
+    workflow: 8,
   };
   return order[type] ?? 2;
 }
@@ -233,7 +236,7 @@ async function pushSingle(
     if (deleteColumnIds.length > 0) {
       payload.delete_column_ids = deleteColumnIds;
     }
-  } else if (['view', 'graph', 'dashboard'].includes(contentType)) {
+  } else if (['view', 'graph', 'dashboard', 'screen', 'report', 'workflow'].includes(contentType)) {
     const settingsPath = fileName ? join(dirPath, fileName) : join(dirPath, 'settings.json');
     if (existsSync(settingsPath)) {
       const settingsRaw = readMarkdown(settingsPath);

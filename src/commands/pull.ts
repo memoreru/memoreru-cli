@@ -162,7 +162,14 @@ async function pullSingle(entry: ScanEntry, isPreview: boolean, projectRoot: str
 
   if (contentType === 'table') return pullTable(entry, isPreview, projectRoot, state);
 
-  if (contentType === 'view' || contentType === 'graph' || contentType === 'dashboard') {
+  if (
+    contentType === 'view' ||
+    contentType === 'graph' ||
+    contentType === 'dashboard' ||
+    contentType === 'screen' ||
+    contentType === 'report' ||
+    contentType === 'workflow'
+  ) {
     return pullSettings(entry, isPreview, projectRoot, state);
   }
 

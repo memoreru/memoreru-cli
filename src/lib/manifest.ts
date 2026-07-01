@@ -24,7 +24,17 @@ import { basename, extname, join } from 'path';
 /** コンテンツのメタデータ */
 export interface MemoreruMeta {
   content_id?: string;
-  content_type: 'page' | 'slide' | 'folder' | 'table' | 'graph' | 'dashboard' | 'view';
+  content_type:
+    | 'page'
+    | 'slide'
+    | 'folder'
+    | 'table'
+    | 'graph'
+    | 'dashboard'
+    | 'view'
+    | 'screen'
+    | 'report'
+    | 'workflow';
   title: string;
   system_type?: string;
   custom_order?: number;

@@ -7,7 +7,7 @@
  *   memoreru login [--profile <name>]       (or: mem login)
  *   memoreru logout [--profile <name>] [--all]
  *   memoreru keys create|list|revoke
- *   memoreru init [dir] [--type page|table|slide|folder]
+ *   memoreru init [dir] [--type page|table|slide|folder|view|graph|dashboard|screen|report|workflow]
  *   memoreru push [dir] [--preview] [--profile <name>]
  *   memoreru pull [dir] [--preview] [--profile <name>]
  *   memoreru status [dir]
@@ -126,7 +126,11 @@ keys
 program
   .command('init [directory]')
   .description('Initialize a new content directory')
-  .option('-t, --type <type>', 'Content type (folder, page, table, slide, view, graph, dashboard)', 'page')
+  .option(
+    '-t, --type <type>',
+    'Content type (folder, page, table, slide, view, graph, dashboard, screen, report, workflow)',
+    'page'
+  )
   .action(initCommand);
 
 program
