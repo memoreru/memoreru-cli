@@ -189,7 +189,7 @@ export interface UpsertInput {
   sources?: string;
   language?: string;
   team_id?: string;
-  parent_id?: string;
+  parent_content_id?: string;
   publish_status?: 'draft' | 'published';
   scheduled_at?: string;
   expires_at?: string;
@@ -438,7 +438,7 @@ export interface ContentSummary {
 export async function listChildren(folderId: string): Promise<ContentSummary[]> {
   const res = await request<Record<string, unknown>>(
     'GET',
-    `/api/contents?parent_id=${folderId}&limit=100`,
+    `/api/contents?parent_content_id=${folderId}&limit=100`,
   );
   return ((res as Record<string, unknown>).data as Record<string, unknown>)
     ?.contents as ContentSummary[] ?? [];

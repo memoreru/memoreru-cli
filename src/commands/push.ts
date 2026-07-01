@@ -131,7 +131,7 @@ async function pushSingle(
   if (Array.isArray(meta.tags)) payload.tags = meta.tags;
   if (Array.isArray(meta.persons)) payload.persons = meta.persons;
 
-  if (entry.parentContentId) payload.parent_id = entry.parentContentId;
+  if (entry.parentContentId) payload.parent_content_id = entry.parentContentId;
 
   // Body 読み込み
   let deferredImages: { localPath: string; data: string; mimeType: string }[] = [];
