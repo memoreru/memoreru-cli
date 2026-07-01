@@ -423,9 +423,9 @@ export async function deleteTableRows(tableId: string, rowIds: string[]): Promis
 // =============================================================================
 
 export interface ContentSummary {
-  contentId: string;
+  content_id: string;
   title: string;
-  contentType: string;
+  content_type: string;
   scope: string;
 }
 
@@ -434,8 +434,8 @@ export async function listChildren(folderId: string): Promise<ContentSummary[]> 
     'GET',
     `/api/contents?parent_content_id=${folderId}&limit=100`,
   );
-  return ((res as Record<string, unknown>).data as Record<string, unknown>)
-    ?.contents as ContentSummary[] ?? [];
+  // 公開 API list レスポンスは `data` が item 配列（wire=snake_case）。
+  return ((res as Record<string, unknown>).data as ContentSummary[]) ?? [];
 }
 
 export async function listRootContents(mineOnly: boolean): Promise<ContentSummary[]> {
@@ -443,8 +443,7 @@ export async function listRootContents(mineOnly: boolean): Promise<ContentSummar
     ? 'scope=all&limit=100&created_by_me=true'
     : 'scope=all&limit=100';
   const res = await request<Record<string, unknown>>('GET', `/api/contents?${params}`);
-  return ((res as Record<string, unknown>).data as Record<string, unknown>)
-    ?.contents as ContentSummary[] ?? [];
+  return ((res as Record<string, unknown>).data as ContentSummary[]) ?? [];
 }
 
 export async function getTenantInfo(): Promise<{
