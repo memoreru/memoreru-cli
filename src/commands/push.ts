@@ -94,9 +94,9 @@ async function pushSingle(
     'slug',
     'category',
     'label',
-    // 日時 / 場所は単一 when / where のみ送信（flat date_* / location_* は撤去済み）。
-    'when',
-    'where',
+    // 日時 / 場所は単一 datetime / location のみ送信（flat date_* / location_* は撤去済み）。
+    'datetime',
+    'location',
     'sources',
     'system_type',
     'custom_order',

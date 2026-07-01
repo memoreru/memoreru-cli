@@ -169,9 +169,9 @@ export interface UpsertInput {
    * アップロードの `data`(base64)+`mimeType`。null でクリア。
    */
   icon?: IconInput;
-  // 日時 / 場所は単一 when / where のみ（flat date_* / location_* は撤去済み）。
-  when?: { start?: string | null; end?: string | null; type?: string | null } | null;
-  where?: {
+  // 日時 / 場所は単一 datetime / location のみ（flat date_* / location_* は撤去済み）。
+  datetime?: { start?: string | null; end?: string | null; type?: string | null } | null;
+  location?: {
     area1?: string | null;
     area2?: string | null;
     lat?: number | null;
