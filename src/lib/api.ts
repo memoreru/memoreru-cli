@@ -124,7 +124,7 @@ export async function pullContent(contentId: string, contentType: 'page' | 'slid
 
 // =============================================================================
 // 拡張設定（スクリプト / スタイル / カスタム処理）
-// external canonical API: /api/contents/tables/:content_id/scripts
+// external canonical API: /api/contents/:content_id/scripts
 // =============================================================================
 
 export type ScriptType = 'style' | 'script' | 'custom_process';
@@ -168,11 +168,11 @@ export async function listScripts(
   const res = scriptType
     ? await request<Record<string, unknown>>(
         'GET',
-        `/api/contents/tables/${contentId}/scripts?type=${scriptType}`,
+        `/api/contents/${contentId}/scripts?type=${scriptType}`,
       )
     : await request<Record<string, unknown>>(
         'GET',
-        `/api/contents/tables/${contentId}/scripts`,
+        `/api/contents/${contentId}/scripts`,
       );
   return ((res.data ?? res) as ScriptRecord[]) ?? [];
 }
@@ -183,7 +183,7 @@ export async function createScript(
 ): Promise<ScriptRecord> {
   const res = await request<Record<string, unknown>>(
     'POST',
-    `/api/contents/tables/${contentId}/scripts`,
+    `/api/contents/${contentId}/scripts`,
     input,
   );
   return (res.data ?? res) as ScriptRecord;
@@ -196,14 +196,14 @@ export async function updateScript(
 ): Promise<ScriptRecord> {
   const res = await request<Record<string, unknown>>(
     'PATCH',
-    `/api/contents/tables/${contentId}/scripts/${scriptId}`,
+    `/api/contents/${contentId}/scripts/${scriptId}`,
     input,
   );
   return (res.data ?? res) as ScriptRecord;
 }
 
 export async function deleteScript(contentId: string, scriptId: string): Promise<void> {
-  await request('DELETE', `/api/contents/tables/${contentId}/scripts/${scriptId}`);
+  await request('DELETE', `/api/contents/${contentId}/scripts/${scriptId}`);
 }
 
 /**
