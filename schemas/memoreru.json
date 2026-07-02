@@ -121,6 +121,34 @@
           "type": "string",
           "description": "参考文献"
         },
+        "scripts": {
+          "type": "array",
+          "description": "拡張設定（スタイル/スクリプト/カスタム処理）をローカルファイルで管理。push でファイル内容を反映、pull でファイルへ書き出し。",
+          "items": {
+            "type": "object",
+            "required": ["type", "file"],
+            "properties": {
+              "type": {
+                "enum": ["style", "script", "custom_process"],
+                "description": "種別（style=CSS / script=JS / custom_process=イベント駆動JS）"
+              },
+              "file": {
+                "type": "string",
+                "description": "コードファイルの相対パス（例: scripts/on-create.js, styles/row-coloring.css）"
+              },
+              "title": { "type": "string", "description": "表示タイトル（未指定はファイル名のベース名）" },
+              "is_disabled": { "type": "boolean", "description": "無効化" },
+              "execution_order": { "type": "string", "description": "実行順序" },
+              "triggers": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "実行トリガー（custom_process のみ）"
+              },
+              "script_id": { "type": "string", "description": "push 後に自動で書き戻される" }
+            },
+            "additionalProperties": false
+          }
+        },
         "when": {
           "type": ["object", "null"],
           "description": "日時（単一オブジェクト）。例: { \"start\": \"2026-01-15\", \"end\": null, \"type\": \"date\" }",

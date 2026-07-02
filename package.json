@@ -17,7 +17,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "tsc && node --test \"dist/src/lib/*.test.js\""
   },
   "engines": {
     "node": ">=18"

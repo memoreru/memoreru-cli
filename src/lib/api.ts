@@ -122,6 +122,90 @@ export async function pullContent(contentId: string, contentType: 'page' | 'slid
   return (res.data ?? res) as { body: string; images: PullImageMeta[] };
 }
 
+// =============================================================================
+// 拡張設定（スクリプト / スタイル / カスタム処理）
+// external canonical API: /api/contents/tables/:content_id/scripts
+// =============================================================================
+
+export type ScriptType = 'style' | 'script' | 'custom_process';
+
+export interface ScriptRecord {
+  script_id: string;
+  content_id: string;
+  title: string;
+  script_type: ScriptType;
+  code: string;
+  file_name: string | null;
+  is_disabled: boolean;
+  execution_order: string | null;
+  version: number;
+  triggers?: unknown[];
+}
+
+export interface CreateScriptInput {
+  title: string;
+  script_type: ScriptType;
+  code?: string;
+  file_name?: string;
+  is_disabled?: boolean;
+  triggers?: string[];
+}
+
+export interface UpdateScriptInput {
+  version: number;
+  title?: string;
+  code?: string;
+  file_name?: string;
+  is_disabled?: boolean;
+  execution_order?: string;
+  triggers?: string[];
+}
+
+export async function listScripts(
+  contentId: string,
+  scriptType?: ScriptType,
+): Promise<ScriptRecord[]> {
+  const res = scriptType
+    ? await request<Record<string, unknown>>(
+        'GET',
+        `/api/contents/tables/${contentId}/scripts?type=${scriptType}`,
+      )
+    : await request<Record<string, unknown>>(
+        'GET',
+        `/api/contents/tables/${contentId}/scripts`,
+      );
+  return ((res.data ?? res) as ScriptRecord[]) ?? [];
+}
+
+export async function createScript(
+  contentId: string,
+  input: CreateScriptInput,
+): Promise<ScriptRecord> {
+  const res = await request<Record<string, unknown>>(
+    'POST',
+    `/api/contents/tables/${contentId}/scripts`,
+    input,
+  );
+  return (res.data ?? res) as ScriptRecord;
+}
+
+export async function updateScript(
+  contentId: string,
+  scriptId: string,
+  input: UpdateScriptInput,
+): Promise<ScriptRecord> {
+  const res = await request<Record<string, unknown>>(
+    'PATCH',
+    `/api/contents/tables/${contentId}/scripts/${scriptId}`,
+    input,
+  );
+  return (res.data ?? res) as ScriptRecord;
+}
+
+export async function deleteScript(contentId: string, scriptId: string): Promise<void> {
+  await request('DELETE', `/api/contents/tables/${contentId}/scripts/${scriptId}`);
+}
+
 /**
  * 単一 icon の入力（API/sync wire と対称な型タグ付き表現）。
  * - emoji: 絵文字グリフ

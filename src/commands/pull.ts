@@ -23,6 +23,7 @@ import {
   type MemoreruMeta,
 } from '../lib/manifest.js';
 import { hasRowIdColumn, writeRowIdCsv } from '../lib/row-id-csv.js';
+import { pullScriptsForContent } from '../lib/scripts-sync.js';
 import { scanDirectory } from '../lib/scan.js';
 import type { ScanEntry } from '../lib/scan.js';
 import { prepareSyncState, readState, writeState, type StateFile } from '../lib/state.js';
@@ -143,6 +144,15 @@ async function pullTable(entry: ScanEntry, isPreview: boolean, projectRoot: stri
       // スナップショットは書き出し後のCSVで保存
       const finalCsv = readMarkdown(csvPath);
       prepareSyncState(projectRoot, state, meta.content_id, entry, finalCsv);
+    }
+  }
+
+  // 拡張設定（スタイル/スクリプト/カスタム処理）をファイルへ書き出し
+  if (!isPreview && meta.content_id) {
+    const scripts = await pullScriptsForContent(meta.content_id, dirPath);
+    if (scripts.length > 0 && fileName) {
+      updateManifestEntry(dirPath, fileName, { scripts });
+      console.log(`   🧩 Pulled ${scripts.length} extension script(s)`);
     }
   }
 
