@@ -114,7 +114,7 @@ export function computeBodyHash(content: string): string {
 }
 
 /** メタデータの決定論的ハッシュを計算（キーをソートして JSON 化）
- * dirPath を渡すと scripts[] が参照するコードファイルの内容も折り込み、
+ * dirPath を渡すと extensions[] が参照するコードファイルの内容も折り込み、
  * ファイル本文の変更も status/diff で検出できるようにする。 */
 export function computeMetaHash(meta: Record<string, unknown>, dirPath?: string): string {
   const picked: Record<string, unknown> = {};
@@ -123,7 +123,7 @@ export function computeMetaHash(meta: Record<string, unknown>, dirPath?: string)
       picked[key] = meta[key];
     }
   }
-  // scripts のコードファイル本文を折り込む（コード編集を検出するため）
+  // extensions のコードファイル本文を折り込む（コード編集を検出するため）
   if (dirPath && Array.isArray(meta.extensions)) {
     picked._extensionFiles = (meta.extensions as Array<Record<string, unknown>>).map(s => {
       const file = typeof s?.file === 'string' ? s.file : null;

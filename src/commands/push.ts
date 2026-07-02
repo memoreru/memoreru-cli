@@ -320,6 +320,8 @@ async function pushSingle(
     );
     console.log(`   🧩 Synced ${updated.length} extension(s)`);
     if (fileName) updateManifestEntry(dirPath, fileName, { extensions: updated });
+    // メモリ上の meta も更新（後続 prepareSyncState の metaHash 整合）
+    Object.assign(meta, { extensions: updated });
   }
 
   // テーブル: row_id + version 付き CSV で上書き + バックアップ。

@@ -115,7 +115,7 @@ function isExtensionUnchanged(
   if (code !== ex.code) return false;
   if (extensionTitleOf(entry) !== ex.title) return false;
   if (entry.file !== (ex.file_name ?? undefined)) return false;
-  if ((entry.is_disabled ?? false) !== ex.is_disabled) return false;
+  if (entry.is_disabled !== undefined && entry.is_disabled !== ex.is_disabled) return false;
   if (
     entry.execution_order !== undefined &&
     entry.execution_order !== (ex.execution_order ?? undefined)

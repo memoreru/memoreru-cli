@@ -26,7 +26,7 @@ import { hasRowIdColumn, writeRowIdCsv } from '../lib/row-id-csv.js';
 import { pullExtensionsForContent } from '../lib/extensions-sync.js';
 import { scanDirectory } from '../lib/scan.js';
 import type { ScanEntry } from '../lib/scan.js';
-import { prepareSyncState, readState, writeState, type StateFile } from '../lib/state.js';
+import { computeMetaHash, prepareSyncState, readState, writeState, type StateFile } from '../lib/state.js';
 import { verifyTenant } from '../lib/tenant.js';
 
 // =============================================================================
@@ -158,11 +158,15 @@ async function pullTable(entry: ScanEntry, isPreview: boolean, projectRoot: stri
 async function pullSingle(entry: ScanEntry, isPreview: boolean, projectRoot: string, state: StateFile): Promise<boolean> {
   const ok = await pullSingleInner(entry, isPreview, projectRoot, state);
   // 拡張設定（スタイル/スクリプト/カスタム処理）を全コンテンツ型で対称にファイルへ書き出し。
-  // content-level サブリソースのため型に依らず復元する（scripts が無ければ何もしない）。
+  // content-level サブリソースのため型に依らず復元する（extensions が無ければ何もしない）。
   if (ok && !isPreview && entry.meta.content_id) {
     const extensions = await pullExtensionsForContent(entry.meta.content_id, entry.dirPath);
     if (extensions.length > 0 && entry.fileName) {
       updateManifestEntry(entry.dirPath, entry.fileName, { extensions });
+      // meta 反映 ＋ metaHash 再計算（snapshot は extensions 書込前に取られるため status 誤検知を防ぐ）
+      Object.assign(entry.meta, { extensions });
+      const snap = state.contents[entry.meta.content_id];
+      if (snap) snap.metaHash = computeMetaHash(entry.meta as Record<string, unknown>, entry.dirPath);
       console.log(`   🧩 Pulled ${extensions.length} extension(s)`);
     }
   }
