@@ -148,6 +148,7 @@ export interface CreateScriptInput {
   code?: string;
   file_name?: string;
   is_disabled?: boolean;
+  execution_order?: string;
   triggers?: string[];
 }
 

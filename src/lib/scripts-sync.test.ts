@@ -12,7 +12,20 @@ import {
   resolveScriptFilePath,
   type ScriptManifestEntry,
   scriptTitleOf,
+  triggerTypesOf,
 } from './scripts-sync.js';
+
+const rec = (over: Partial<import('./api.js').ScriptRecord> & { script_id: string }) => ({
+  content_id: 'c1',
+  title: 'X',
+  script_type: 'script' as const,
+  code: '',
+  file_name: null,
+  is_disabled: false,
+  execution_order: null,
+  version: 1,
+  ...over,
+});
 
 const DIR = '/work/project';
 
@@ -79,6 +92,28 @@ test('planScriptSync: 未一致は作成に振り分ける', () => {
   const { toCreate, toUpdate } = planScriptSync(entries, []);
   assert.equal(toCreate.length, 1);
   assert.equal(toUpdate.length, 0);
+});
+
+test('planScriptSync: manifest に無い既存は toDelete（prune 候補）に入る', () => {
+  const entries: ScriptManifestEntry[] = [{ type: 'script', file: 'scripts/keep.js' }];
+  const existing = [
+    rec({ script_id: 'keep', file_name: 'scripts/keep.js' }),
+    rec({ script_id: 'orphan', file_name: 'scripts/removed.js' }),
+  ];
+  const { toCreate, toUpdate, toDelete } = planScriptSync(entries, existing);
+  assert.equal(toCreate.length, 0);
+  assert.equal(toUpdate.length, 1);
+  assert.equal(toDelete.length, 1);
+  assert.equal(toDelete[0].script_id, 'orphan');
+});
+
+test('triggerTypesOf: オブジェクト配列を trigger_type 文字列へ正規化', () => {
+  assert.deepEqual(
+    triggerTypesOf([{ trigger_type: 'after_create' }, { trigger_type: 'after_update' }]),
+    ['after_create', 'after_update'],
+  );
+  assert.deepEqual(triggerTypesOf(['on_display']), ['on_display']);
+  assert.equal(triggerTypesOf(undefined), undefined);
 });
 
 test('scriptTitleOf: title 優先、無ければ拡張子抜きのベース名', () => {

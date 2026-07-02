@@ -147,15 +147,6 @@ async function pullTable(entry: ScanEntry, isPreview: boolean, projectRoot: stri
     }
   }
 
-  // 拡張設定（スタイル/スクリプト/カスタム処理）をファイルへ書き出し
-  if (!isPreview && meta.content_id) {
-    const scripts = await pullScriptsForContent(meta.content_id, dirPath);
-    if (scripts.length > 0 && fileName) {
-      updateManifestEntry(dirPath, fileName, { scripts });
-      console.log(`   🧩 Pulled ${scripts.length} extension script(s)`);
-    }
-  }
-
   console.log(`   ✅ Table pulled`);
   return true;
 }
@@ -165,6 +156,20 @@ async function pullTable(entry: ScanEntry, isPreview: boolean, projectRoot: stri
 // =============================================================================
 
 async function pullSingle(entry: ScanEntry, isPreview: boolean, projectRoot: string, state: StateFile): Promise<boolean> {
+  const ok = await pullSingleInner(entry, isPreview, projectRoot, state);
+  // 拡張設定（スタイル/スクリプト/カスタム処理）を全コンテンツ型で対称にファイルへ書き出し。
+  // content-level サブリソースのため型に依らず復元する（scripts が無ければ何もしない）。
+  if (ok && !isPreview && entry.meta.content_id) {
+    const scripts = await pullScriptsForContent(entry.meta.content_id, entry.dirPath);
+    if (scripts.length > 0 && entry.fileName) {
+      updateManifestEntry(entry.dirPath, entry.fileName, { scripts });
+      console.log(`   🧩 Pulled ${scripts.length} extension script(s)`);
+    }
+  }
+  return ok;
+}
+
+async function pullSingleInner(entry: ScanEntry, isPreview: boolean, projectRoot: string, state: StateFile): Promise<boolean> {
   const { dirPath, fileName, meta } = entry;
   const contentType = meta.content_type;
 

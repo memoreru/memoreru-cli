@@ -149,7 +149,7 @@
             "additionalProperties": false
           }
         },
-        "when": {
+        "datetime": {
           "type": ["object", "null"],
           "description": "日時（単一オブジェクト）。例: { \"start\": \"2026-01-15\", \"end\": null, \"type\": \"date\" }",
           "properties": {
@@ -159,7 +159,7 @@
           },
           "additionalProperties": false
         },
-        "where": {
+        "location": {
           "type": ["object", "null"],
           "description": "場所（単一オブジェクト）。area1/area2 は登録地点の id（tenant はサーバが解決）。",
           "properties": {
@@ -172,36 +172,27 @@
           },
           "additionalProperties": false
         },
-        "date_type": {
+        "system_type": {
           "type": "string",
-          "enum": ["year", "month", "date", "datetime"],
-          "description": "日時精度"
+          "description": "システム種別（内部用）"
         },
-        "date_start": {
-          "type": "string",
-          "description": "開始日時（例: 2026, 2026-01, 2026-01-15, 2026-01-15T10:00:00）"
-        },
-        "date_end": {
-          "type": "string",
-          "description": "終了日時（date_start と同じ形式）"
-        },
-        "location_name": {
-          "type": "string",
-          "description": "場所名"
-        },
-        "location_address": {
-          "type": "string",
-          "description": "住所"
-        },
-        "location_lat": {
+        "custom_order": {
           "type": "number",
-          "description": "緯度（WGS84）"
+          "description": "表示順（カスタムソート用）"
         },
-        "location_lng": {
-          "type": "number",
-          "description": "経度（WGS84）"
+        "match_column": {
+          "type": "string",
+          "description": "table: 照合列 upsert に使う列（列名 or column_id）"
         },
-        "parent_id": {
+        "template_group_id": {
+          "type": "string",
+          "description": "テンプレートグループ ID（テンプレート配布用）"
+        },
+        "template_group_tenant_id": {
+          "type": "string",
+          "description": "テンプレートグループの tenant_id"
+        },
+        "parent_content_id": {
           "type": "string",
           "description": "親フォルダの content_id"
         },

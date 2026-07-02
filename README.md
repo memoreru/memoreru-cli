@@ -254,16 +254,12 @@ Only `content_type` is required. All other properties are optional.
 |-------|-------------|
 | `thumbnail` | Image path (e.g., `./images/thumb.png`) |
 | `icon` | Icon (emoji or image): `{"type":"emoji","emoji":"📝"}` / `{"type":"image","path":"./icon.png"}` / `null` |
-| `date_type` | `year`, `month`, `date`, `datetime` |
-| `date_start` | Start date (e.g., `2026-01-15`) |
-| `date_end` | End date |
-| `location_lat` | Latitude |
-| `location_lng` | Longitude |
-| `location_address` | Address |
-| `location_name` | Location name |
+| `datetime` | Date/time object: `{"start":"2026-01-15","end":null,"type":"date"}` |
+| `location` | Location object: `{"area1":null,"area2":null,"lat":35.6,"lng":139.7,"address":"...","name":"..."}` |
 | `persons` | Person names (e.g., `["John Doe"]`) |
 | `sources` | References |
 | `language` | Language code (default: `en`) |
+| `scripts` | Extension scripts by file path (see below) |
 
 </details>
 
@@ -273,7 +269,7 @@ Only `content_type` is required. All other properties are optional.
 | Property | Description |
 |-------|-------------|
 | `team_id` | Team ID (required when scope is `team`) |
-| `parent_id` | Parent folder's content_id |
+| `parent_content_id` | Parent folder's content_id |
 | `publish_status` | `draft` or `published` (default: `published`) |
 | `scheduled_at` | Scheduled publish time (ISO 8601) |
 | `expires_at` | Expiration time (ISO 8601) |

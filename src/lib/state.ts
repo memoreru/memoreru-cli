@@ -58,7 +58,7 @@ export interface StatusEntry {
 /** metaHash 計算対象のフィールド（安定した順序で列挙） */
 const META_HASH_FIELDS = [
   'category', 'content_type', 'description', 'icon', 'label', 'language',
-  'persons', 'publish_status', 'scope', 'slug', 'tags', 'title',
+  'persons', 'publish_status', 'scope', 'scripts', 'slug', 'tags', 'title',
 ] as const;
 
 // =============================================================================
@@ -113,13 +113,28 @@ export function computeBodyHash(content: string): string {
   return createHash('sha256').update(content, 'utf-8').digest('hex');
 }
 
-/** メタデータの決定論的ハッシュを計算（キーをソートして JSON 化） */
-export function computeMetaHash(meta: Record<string, unknown>): string {
+/** メタデータの決定論的ハッシュを計算（キーをソートして JSON 化）
+ * dirPath を渡すと scripts[] が参照するコードファイルの内容も折り込み、
+ * ファイル本文の変更も status/diff で検出できるようにする。 */
+export function computeMetaHash(meta: Record<string, unknown>, dirPath?: string): string {
   const picked: Record<string, unknown> = {};
   for (const key of META_HASH_FIELDS) {
     if (meta[key] !== undefined) {
       picked[key] = meta[key];
     }
+  }
+  // scripts のコードファイル本文を折り込む（コード編集を検出するため）
+  if (dirPath && Array.isArray(meta.scripts)) {
+    picked._scriptFiles = (meta.scripts as Array<Record<string, unknown>>).map(s => {
+      const file = typeof s?.file === 'string' ? s.file : null;
+      if (!file) return { file: null };
+      try {
+        const code = readFileSync(join(dirPath, file), 'utf-8');
+        return { file, hash: createHash('sha256').update(code, 'utf-8').digest('hex') };
+      } catch {
+        return { file, hash: null };
+      }
+    });
   }
   const json = JSON.stringify(picked);
   return createHash('sha256').update(json, 'utf-8').digest('hex');
@@ -194,7 +209,7 @@ export function prepareSyncState(
 
   state.contents[contentId] = {
     bodyHash: computeBodyHash(body),
-    metaHash: computeMetaHash(entry.meta as Record<string, unknown>),
+    metaHash: computeMetaHash(entry.meta as Record<string, unknown>, entry.dirPath),
     localPath: resolveLocalPath(projectRoot, entry),
     contentType: entry.meta.content_type,
     title: entry.meta.title,
@@ -247,7 +262,7 @@ export function classifyEntries(projectRoot: string, entries: ScanEntry[]): Stat
 
     // folder はボディがないので metaHash のみ比較
     if (contentType === 'folder') {
-      const currentMetaHash = computeMetaHash(entry.meta as Record<string, unknown>);
+      const currentMetaHash = computeMetaHash(entry.meta as Record<string, unknown>, entry.dirPath);
       const status = currentMetaHash !== snapshot.metaHash ? 'modified' : 'unchanged';
       result.push({ status, localPath, contentType, title, contentId, detail: status === 'modified' ? 'meta' : undefined });
       continue;
@@ -273,7 +288,7 @@ export function classifyEntries(projectRoot: string, entries: ScanEntry[]): Stat
     }
     const currentBodyHash = computeBodyHash(readFileSync(filePath, 'utf-8'));
 
-    const currentMetaHash = computeMetaHash(entry.meta as Record<string, unknown>);
+    const currentMetaHash = computeMetaHash(entry.meta as Record<string, unknown>, entry.dirPath);
     const bodyChanged = currentBodyHash !== snapshot.bodyHash;
     const metaChanged = currentMetaHash !== snapshot.metaHash;
 

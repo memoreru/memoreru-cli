@@ -310,11 +310,13 @@ async function pushSingle(
 
   // 拡張設定（スタイル/スクリプト/カスタム処理）をローカルファイルから同期。
   // file_name 照合で作成/更新し、script_id を manifest に書き戻す。
+  // --prune（または meta.prune）で manifest に無い既存スクリプトを削除。
   if (Array.isArray(meta.scripts) && meta.scripts.length > 0) {
     const updated = await pushScriptsForContent(
       result.content_id,
       dirPath,
       meta.scripts as ScriptManifestEntry[],
+      { prune: prune || meta.prune === true },
     );
     console.log(`   🧩 Synced ${updated.length} extension script(s)`);
     if (fileName) updateManifestEntry(dirPath, fileName, { scripts: updated });
