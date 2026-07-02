@@ -13,7 +13,7 @@ import {
 } from '../lib/api.js';
 import { readImageAsBase64, readMarkdown } from '../lib/files.js';
 import { updateManifestEntry } from '../lib/manifest.js';
-import { pushScriptsForContent, type ScriptManifestEntry } from '../lib/scripts-sync.js';
+import { pushExtensionsForContent, type ExtensionManifestEntry } from '../lib/extensions-sync.js';
 import {
   computeRowDiff,
   extractRowMeta,
@@ -311,15 +311,15 @@ async function pushSingle(
   // 拡張設定（スタイル/スクリプト/カスタム処理）をローカルファイルから同期。
   // file_name 照合で作成/更新し、script_id を manifest に書き戻す。
   // --prune（または meta.prune）で manifest に無い既存スクリプトを削除。
-  if (Array.isArray(meta.scripts) && meta.scripts.length > 0) {
-    const updated = await pushScriptsForContent(
+  if (Array.isArray(meta.extensions) && meta.extensions.length > 0) {
+    const updated = await pushExtensionsForContent(
       result.content_id,
       dirPath,
-      meta.scripts as ScriptManifestEntry[],
+      meta.extensions as ExtensionManifestEntry[],
       { prune: prune || meta.prune === true },
     );
-    console.log(`   🧩 Synced ${updated.length} extension script(s)`);
-    if (fileName) updateManifestEntry(dirPath, fileName, { scripts: updated });
+    console.log(`   🧩 Synced ${updated.length} extension(s)`);
+    if (fileName) updateManifestEntry(dirPath, fileName, { extensions: updated });
   }
 
   // テーブル: row_id + version 付き CSV で上書き + バックアップ。

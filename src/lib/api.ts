@@ -123,17 +123,17 @@ export async function pullContent(contentId: string, contentType: 'page' | 'slid
 }
 
 // =============================================================================
-// 拡張設定（スクリプト / スタイル / カスタム処理）
-// external canonical API: /api/contents/:content_id/scripts
+// 拡張設定（Extensions: スタイル / スクリプト / カスタム処理）
+// external canonical API: /api/contents/:content_id/extensions
 // =============================================================================
 
-export type ScriptType = 'style' | 'script' | 'custom_process';
+export type ExtensionType = 'style' | 'script' | 'custom_process';
 
-export interface ScriptRecord {
-  script_id: string;
+export interface ExtensionRecord {
+  extension_id: string;
   content_id: string;
   title: string;
-  script_type: ScriptType;
+  type: ExtensionType;
   code: string;
   file_name: string | null;
   is_disabled: boolean;
@@ -142,9 +142,9 @@ export interface ScriptRecord {
   triggers?: unknown[];
 }
 
-export interface CreateScriptInput {
+export interface CreateExtensionInput {
   title: string;
-  script_type: ScriptType;
+  type: ExtensionType;
   code?: string;
   file_name?: string;
   is_disabled?: boolean;
@@ -152,7 +152,7 @@ export interface CreateScriptInput {
   triggers?: string[];
 }
 
-export interface UpdateScriptInput {
+export interface UpdateExtensionInput {
   version: number;
   title?: string;
   code?: string;
@@ -162,49 +162,49 @@ export interface UpdateScriptInput {
   triggers?: string[];
 }
 
-export async function listScripts(
+export async function listExtensions(
   contentId: string,
-  scriptType?: ScriptType,
-): Promise<ScriptRecord[]> {
+  scriptType?: ExtensionType,
+): Promise<ExtensionRecord[]> {
   const res = scriptType
     ? await request<Record<string, unknown>>(
         'GET',
-        `/api/contents/${contentId}/scripts?type=${scriptType}`,
+        `/api/contents/${contentId}/extensions?type=${scriptType}`,
       )
     : await request<Record<string, unknown>>(
         'GET',
-        `/api/contents/${contentId}/scripts`,
+        `/api/contents/${contentId}/extensions`,
       );
-  return ((res.data ?? res) as ScriptRecord[]) ?? [];
+  return ((res.data ?? res) as ExtensionRecord[]) ?? [];
 }
 
-export async function createScript(
+export async function createExtension(
   contentId: string,
-  input: CreateScriptInput,
-): Promise<ScriptRecord> {
+  input: CreateExtensionInput,
+): Promise<ExtensionRecord> {
   const res = await request<Record<string, unknown>>(
     'POST',
-    `/api/contents/${contentId}/scripts`,
+    `/api/contents/${contentId}/extensions`,
     input,
   );
-  return (res.data ?? res) as ScriptRecord;
+  return (res.data ?? res) as ExtensionRecord;
 }
 
-export async function updateScript(
+export async function updateExtension(
   contentId: string,
   scriptId: string,
-  input: UpdateScriptInput,
-): Promise<ScriptRecord> {
+  input: UpdateExtensionInput,
+): Promise<ExtensionRecord> {
   const res = await request<Record<string, unknown>>(
     'PATCH',
-    `/api/contents/${contentId}/scripts/${scriptId}`,
+    `/api/contents/${contentId}/extensions/${scriptId}`,
     input,
   );
-  return (res.data ?? res) as ScriptRecord;
+  return (res.data ?? res) as ExtensionRecord;
 }
 
-export async function deleteScript(contentId: string, scriptId: string): Promise<void> {
-  await request('DELETE', `/api/contents/${contentId}/scripts/${scriptId}`);
+export async function deleteExtension(contentId: string, scriptId: string): Promise<void> {
+  await request('DELETE', `/api/contents/${contentId}/extensions/${scriptId}`);
 }
 
 /**

@@ -121,9 +121,9 @@
           "type": "string",
           "description": "参考文献"
         },
-        "scripts": {
+        "extensions": {
           "type": "array",
-          "description": "拡張設定（スタイル/スクリプト/カスタム処理）をローカルファイルで管理。push でファイル内容を反映、pull でファイルへ書き出し。",
+          "description": "拡張設定（Extensions: スタイル/スクリプト/カスタム処理）をローカルファイルで管理。push でファイル内容を反映、pull でファイルへ書き出し。",
           "items": {
             "type": "object",
             "required": ["type", "file"],
@@ -144,7 +144,7 @@
                 "items": { "type": "string" },
                 "description": "実行トリガー（custom_process のみ）"
               },
-              "script_id": { "type": "string", "description": "push 後に自動で書き戻される" }
+              "extension_id": { "type": "string", "description": "push 後に自動で書き戻される" }
             },
             "additionalProperties": false
           }

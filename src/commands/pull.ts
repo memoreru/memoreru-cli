@@ -23,7 +23,7 @@ import {
   type MemoreruMeta,
 } from '../lib/manifest.js';
 import { hasRowIdColumn, writeRowIdCsv } from '../lib/row-id-csv.js';
-import { pullScriptsForContent } from '../lib/scripts-sync.js';
+import { pullExtensionsForContent } from '../lib/extensions-sync.js';
 import { scanDirectory } from '../lib/scan.js';
 import type { ScanEntry } from '../lib/scan.js';
 import { prepareSyncState, readState, writeState, type StateFile } from '../lib/state.js';
@@ -160,10 +160,10 @@ async function pullSingle(entry: ScanEntry, isPreview: boolean, projectRoot: str
   // 拡張設定（スタイル/スクリプト/カスタム処理）を全コンテンツ型で対称にファイルへ書き出し。
   // content-level サブリソースのため型に依らず復元する（scripts が無ければ何もしない）。
   if (ok && !isPreview && entry.meta.content_id) {
-    const scripts = await pullScriptsForContent(entry.meta.content_id, entry.dirPath);
-    if (scripts.length > 0 && entry.fileName) {
-      updateManifestEntry(entry.dirPath, entry.fileName, { scripts });
-      console.log(`   🧩 Pulled ${scripts.length} extension script(s)`);
+    const extensions = await pullExtensionsForContent(entry.meta.content_id, entry.dirPath);
+    if (extensions.length > 0 && entry.fileName) {
+      updateManifestEntry(entry.dirPath, entry.fileName, { extensions });
+      console.log(`   🧩 Pulled ${extensions.length} extension(s)`);
     }
   }
   return ok;

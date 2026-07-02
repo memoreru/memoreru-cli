@@ -259,7 +259,7 @@ Only `content_type` is required. All other properties are optional.
 | `persons` | Person names (e.g., `["John Doe"]`) |
 | `sources` | References |
 | `language` | Language code (default: `en`) |
-| `scripts` | Extension scripts by file path (see below) |
+| `extensions` | Extensions (style/script/custom_process) by file path (see below) |
 
 </details>
 

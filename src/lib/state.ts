@@ -58,7 +58,7 @@ export interface StatusEntry {
 /** metaHash 計算対象のフィールド（安定した順序で列挙） */
 const META_HASH_FIELDS = [
   'category', 'content_type', 'description', 'icon', 'label', 'language',
-  'persons', 'publish_status', 'scope', 'scripts', 'slug', 'tags', 'title',
+  'persons', 'publish_status', 'scope', 'extensions', 'slug', 'tags', 'title',
 ] as const;
 
 // =============================================================================
@@ -124,8 +124,8 @@ export function computeMetaHash(meta: Record<string, unknown>, dirPath?: string)
     }
   }
   // scripts のコードファイル本文を折り込む（コード編集を検出するため）
-  if (dirPath && Array.isArray(meta.scripts)) {
-    picked._scriptFiles = (meta.scripts as Array<Record<string, unknown>>).map(s => {
+  if (dirPath && Array.isArray(meta.extensions)) {
+    picked._extensionFiles = (meta.extensions as Array<Record<string, unknown>>).map(s => {
       const file = typeof s?.file === 'string' ? s.file : null;
       if (!file) return { file: null };
       try {
