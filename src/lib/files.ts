@@ -6,8 +6,33 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { createHash } from 'crypto';
 
+/**
+ * push する markdown 本文を読み込む。
+ * - CRLF を LF に正規化する
+ * - 先頭の YAML frontmatter を除去する。frontmatter はツール向けのメタデータであり、
+ *   ページ本文には含めない。
+ */
 export function readMarkdown(filePath: string): string {
-  return readFileSync(filePath, 'utf-8');
+  return stripFrontmatter(readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n'));
+}
+
+/**
+ * 先頭の YAML frontmatter を除去する。
+ * ファイルの 1 行目が `---` で、それ以降に閉じの `---` 単独行がある場合のみ除去
+ * (本文中の水平線 `---` とは区別される。閉じが無い場合は frontmatter とみなさない)。
+ */
+export function stripFrontmatter(md: string): string {
+  if (!md.startsWith('---\n')) return md;
+  const lines = md.split('\n');
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim() === '---') {
+      return lines
+        .slice(i + 1)
+        .join('\n')
+        .replace(/^\n+/, '');
+    }
+  }
+  return md;
 }
 
 export function writeMarkdown(filePath: string, content: string): void {
