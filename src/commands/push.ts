@@ -170,12 +170,12 @@ async function pushSingle(
       if (matchColumn) {
         // 照合列 upsert: row_id を CSV に持たず、match 列の値で既存行を照合して update/create。
         // スナップショット (前回 push 成功時の CSV) があればキー比較で変更・新規行のみ送る。
-        // 無い場合 (fresh clone / 初回) は全行送信。MEMORERU_PUSH_FULL=1 で常に全行送信
+        // 無い場合 (fresh clone / 初回) は全行送信。MEMORERU_PUSH_ALL_ROWS=1 で常に全行送信
         // (サーバ側を直接編集した等でスナップショット差分を信頼できないときの escape hatch)。
         // スナップショットに無いキーの削除はここでは行わない (削除同期は呼び出し側の責務)。
         payload.match_column = matchColumn;
         const matchSnapshot =
-          process.env.MEMORERU_PUSH_FULL === '1' || !meta.content_id
+          process.env.MEMORERU_PUSH_ALL_ROWS === '1' || !meta.content_id
             ? null
             : readSnapshot(projectRoot, meta.content_id, 'table');
         const matchHeader = resolveMatchHeaderName(
