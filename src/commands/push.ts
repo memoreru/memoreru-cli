@@ -15,6 +15,10 @@ import { readImageAsBase64, readMarkdown } from '../lib/files.js';
 import { updateManifestEntry } from '../lib/manifest.js';
 import { pushExtensionsForContent, type ExtensionManifestEntry } from '../lib/extensions-sync.js';
 import {
+  computeMatchColumnDiff,
+  resolveMatchHeaderName,
+} from '../lib/match-csv.js';
+import {
   computeRowDiff,
   extractRowMeta,
   hasRowIdColumn,
@@ -165,9 +169,32 @@ async function pushSingle(
       const matchColumn = typeof meta.match_column === 'string' ? meta.match_column : undefined;
       if (matchColumn) {
         // 照合列 upsert: row_id を CSV に持たず、match 列の値で既存行を照合して update/create。
-        // 全行 + match_column を送る (大型 table は api 側で自動チャンク)。fresh clone でも動く。
-        payload.csv_data = csvContent;
+        // スナップショット (前回 push 成功時の CSV) があればキー比較で変更・新規行のみ送る。
+        // 無い場合 (fresh clone / 初回) は全行送信。MEMORERU_PUSH_FULL=1 で常に全行送信
+        // (サーバ側を直接編集した等でスナップショット差分を信頼できないときの escape hatch)。
+        // スナップショットに無いキーの削除はここでは行わない (削除同期は呼び出し側の責務)。
         payload.match_column = matchColumn;
+        const matchSnapshot =
+          process.env.MEMORERU_PUSH_FULL === '1' || !meta.content_id
+            ? null
+            : readSnapshot(projectRoot, meta.content_id, 'table');
+        const matchHeader = resolveMatchHeaderName(
+          matchColumn,
+          meta.columns as Array<{ id?: string; name: string }> | undefined,
+        );
+        const diff = matchSnapshot
+          ? computeMatchColumnDiff(csvContent, matchSnapshot, matchHeader)
+          : null;
+        if (diff) {
+          if (diff.changedCount === 0) {
+            console.log(`   ℹ️ No row changes detected (match=${matchHeader}, ${diff.unchangedCount} unchanged)`);
+          } else {
+            console.log(`   📊 ${diff.changedCount} changed, ${diff.unchangedCount} unchanged (match=${matchHeader})`);
+          }
+          payload.csv_data = diff.changedCsv;
+        } else {
+          payload.csv_data = csvContent;
+        }
       } else if (hasRowIdColumn(csvContent)) {
         // row_id + version 付き CSV → 差分pushを試みる
         const snapshotCsv = meta.content_id
