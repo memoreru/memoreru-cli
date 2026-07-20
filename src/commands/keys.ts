@@ -2,7 +2,7 @@
  * memoreru keys create / list / revoke コマンド
  *
  * セッション認証（credentials.json のクッキー）を使って API キーを管理する。
- * 既存の POST/GET/DELETE /api/settings/api-keys エンドポイントを呼び出す。
+ * 既存の POST/GET/DELETE /api/external/api-keys エンドポイントを呼び出す。
  */
 
 import { getConfig, buildAuthHeaders } from '../lib/api.js';
@@ -42,7 +42,7 @@ export async function keysCreateCommand(options: {
       data?: { id: string; name: string; key: string; key_prefix: string; scopes: string[]; created_at: string };
       detail?: string;
       message?: string;
-    }>('POST', '/api/settings/api-keys', { name, scopes });
+    }>('POST', '/api/external/api-keys', { name, scopes });
 
     if (!res.ok) {
       const msg = (data as Record<string, unknown>).detail ?? (data as Record<string, unknown>).message ?? `HTTP ${res.status}`;
@@ -77,7 +77,7 @@ export async function keysListCommand(options: { profile?: string }) {
       data?: { keys: { id: string; name: string; key_prefix: string; scopes: string[]; last_used_at: string | null; created_at: string }[] };
       detail?: string;
       message?: string;
-    }>('GET', '/api/settings/api-keys');
+    }>('GET', '/api/external/api-keys');
 
     if (!res.ok) {
       const msg = (data as Record<string, unknown>).detail ?? (data as Record<string, unknown>).message ?? `HTTP ${res.status}`;
@@ -112,7 +112,7 @@ export async function keysRevokeCommand(prefix: string, options: { profile?: str
     // まず一覧を取得してプレフィックスから ID を解決
     const { res: listRes, data: listData } = await sessionRequest<{
       data?: { keys: { id: string; name: string; key_prefix: string }[] };
-    }>('GET', '/api/settings/api-keys');
+    }>('GET', '/api/external/api-keys');
 
     if (!listRes.ok) {
       console.error(`\n❌ APIキー一覧の取得に失敗しました。`);
@@ -126,7 +126,7 @@ export async function keysRevokeCommand(prefix: string, options: { profile?: str
       process.exit(1);
     }
 
-    const { res } = await sessionRequest('DELETE', `/api/settings/api-keys/${target.id}`);
+    const { res } = await sessionRequest('DELETE', `/api/external/api-keys/${target.id}`);
 
     if (!res.ok) {
       console.error(`\n❌ APIキーの無効化に失敗しました (${res.status})`);

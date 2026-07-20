@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.3.0 (2026-07-21)
+
+### Changed（サーバー側の API 再編に追随）
+
+- **CLI が呼び出す API の URL を変更しました**。Memoreru 本体で API 層を「契約」で
+  再編したことに追随します。従来の URL は本体側で廃止されるため、**本バージョンは
+  再編後のサーバーが前提**です:
+  - `/api/sync/*` → `/api/external/sync/*` (push / pull / upsert)
+  - `/api/settings/api-keys` → `/api/external/api-keys` (`memoreru keys`)
+  - `/api/cli-auth/exchange` → `/api/external/cli-auth/exchange` (`memoreru login`)
+- **重要**: 本バージョンは再編後の Memoreru サーバーでのみ動作します。旧サーバーに
+  接続すると 404 になります。逆に旧バージョンの CLI (〜1.2.0) を再編後のサーバーで
+  使うと動作しないため、`npm install -g @memoreru-sdk/cli@latest` で更新してください。
+
 ## 1.2.0 (2026-07-07)
 
 ### Changed

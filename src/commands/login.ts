@@ -104,7 +104,7 @@ async function loginWithBrowser(
 
       try {
         // 認可コードをセッショントークンに交換
-        const exchangeRes = await fetch(`${baseUrl}/api/cli-auth/exchange`, {
+        const exchangeRes = await fetch(`${baseUrl}/api/external/cli-auth/exchange`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code }),
