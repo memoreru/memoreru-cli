@@ -153,3 +153,29 @@ export function computeRowDiff(
     unchangedRows,
   };
 }
+
+/**
+ * 競合で拒否された行を CSV から取り除く（スナップショット保存用）。
+ *
+ * push の差分計算はスナップショット基準で行うため、サーバーに拒否された行を
+ * 「送信済み」として記録すると、次回以降 computeRowDiff が「変更なし」と判定して
+ * その行が恒久的に送られなくなる（しかも push は成功表示で終わるためサイレント）。
+ * 拒否された行はスナップショットから外し、「未送信」の状態を保つ。
+ */
+export function excludeConflictRowsFromCsv(
+  csv: string,
+  conflicts?: { row_id: string }[],
+): string {
+  if (!conflicts || conflicts.length === 0) return csv;
+
+  const conflictIds = new Set(conflicts.map((c) => c.row_id));
+  const lines = csv.split('\n');
+  if (lines.length <= 1) return csv;
+
+  const header = lines[0] ?? '';
+  const kept = lines.slice(1).filter((line) => {
+    const rowId = line.slice(0, line.indexOf(','));
+    return !conflictIds.has(rowId);
+  });
+  return [header, ...kept].join('\n');
+}

@@ -23,6 +23,7 @@ import {
   extractRowMeta,
   hasRowIdColumn,
   writeRowIdCsv,
+  excludeConflictRowsFromCsv,
 } from '../lib/row-id-csv.js';
 import type { ScanEntry } from '../lib/scan.js';
 import { scanDirectory } from '../lib/scan.js';
@@ -65,6 +66,13 @@ function typePriority(type: string): number {
   };
   return order[type] ?? 2;
 }
+
+/**
+ * 直近の push で「競合により未反映のまま残った行」があるか。
+ * pushSingle が検出し、pushCommand の完了表示で警告するためのフラグ。
+ * CLI は 1 プロセス 1 実行なのでモジュールスコープで持つ。
+ */
+let hasUnresolvedConflicts = false;
 
 async function pushSingle(
   entry: ScanEntry,
@@ -477,6 +485,9 @@ async function pushSingle(
         );
       }
       console.log(`   → Run 'memoreru pull' to resolve conflicts`);
+      // 競合行はサーバーに反映されていない。最終行が成功表示だけだと見落とすため、
+      // 未反映が残っていることを明示する
+      hasUnresolvedConflicts = true;
     }
 
     const changedCount = result.row_ids.length - (result.conflicts?.length ?? 0);
@@ -515,13 +526,16 @@ async function pushSingle(
     }
   }
 
-  // スナップショット保存（row_id書き戻し後の最終状態で保存）
+  // スナップショット保存（row_id書き戻し後の最終状態で保存）。
+  // ただし競合で拒否された行は **サーバーに反映されていない** ので除外する。
+  // 含めてしまうと次回の差分計算で「変更なし」と判定され、その行が恒久的に
+  // 送られなくなる（push は成功表示で終わるためサイレントに乖離が残る）。
   prepareSyncState(
     projectRoot,
     state,
     result.content_id,
     entry,
-    finalCsvContent ?? rawFileContent ?? ''
+    excludeConflictRowsFromCsv(finalCsvContent ?? rawFileContent ?? '', result.conflicts)
   );
 
   // 新規作成時: content_id をマニフェストに書き戻し
@@ -544,6 +558,7 @@ export async function pushCommand(
   directory: string | undefined,
   options: { preview?: boolean; deleteColumns?: string; prune?: boolean }
 ) {
+  hasUnresolvedConflicts = false;
   const dir = directory || '.';
   const isPreview = options.preview ?? false;
   // --prune: テーブルで「ローカル CSV に無いサーバ行」を削除する full-sync（全投影 feed 用）
@@ -618,4 +633,8 @@ export async function pushCommand(
   console.log(`\n${isPreview ? 'ℹ️Preview complete' : '✅ Push complete'}`);
   console.log(`   Succeeded: ${succeeded}`);
   if (failed > 0) console.log(`   Failed: ${failed}`);
+  if (hasUnresolvedConflicts) {
+    // 競合行はサーバーに反映されていない。成功表示だけで終えると乖離を見落とす
+    console.log(`   ⚠️ 未反映の競合行があります。'memoreru pull' で解決してください`);
+  }
 }
