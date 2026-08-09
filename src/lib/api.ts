@@ -124,7 +124,7 @@ export async function pullContent(contentId: string, contentType: 'page' | 'slid
 
 // =============================================================================
 // 拡張設定（Extensions: スタイル / スクリプト / カスタム処理）
-// external canonical API: /api/contents/:content_id/extensions
+// external canonical API: /api/v1/contents/:content_id/extensions
 // =============================================================================
 
 export type ExtensionType = 'style' | 'script' | 'custom_process';
@@ -169,11 +169,11 @@ export async function listExtensions(
   const res = scriptType
     ? await request<Record<string, unknown>>(
         'GET',
-        `/api/contents/${contentId}/extensions?type=${scriptType}`,
+        `/api/v1/contents/${contentId}/extensions?type=${scriptType}`,
       )
     : await request<Record<string, unknown>>(
         'GET',
-        `/api/contents/${contentId}/extensions`,
+        `/api/v1/contents/${contentId}/extensions`,
       );
   return ((res.data ?? res) as ExtensionRecord[]) ?? [];
 }
@@ -184,7 +184,7 @@ export async function createExtension(
 ): Promise<ExtensionRecord> {
   const res = await request<Record<string, unknown>>(
     'POST',
-    `/api/contents/${contentId}/extensions`,
+    `/api/v1/contents/${contentId}/extensions`,
     input,
   );
   return (res.data ?? res) as ExtensionRecord;
@@ -197,14 +197,14 @@ export async function updateExtension(
 ): Promise<ExtensionRecord> {
   const res = await request<Record<string, unknown>>(
     'PATCH',
-    `/api/contents/${contentId}/extensions/${scriptId}`,
+    `/api/v1/contents/${contentId}/extensions/${scriptId}`,
     input,
   );
   return (res.data ?? res) as ExtensionRecord;
 }
 
 export async function deleteExtension(contentId: string, scriptId: string): Promise<void> {
-  await request('DELETE', `/api/contents/${contentId}/extensions/${scriptId}`);
+  await request('DELETE', `/api/v1/contents/${contentId}/extensions/${scriptId}`);
 }
 
 /**
@@ -421,7 +421,7 @@ export interface TableColumn {
 export async function pullTableData(tableId: string) {
   const colRes = await request<Record<string, unknown>>(
     'GET',
-    `/api/contents/tables/${tableId}/columns`,
+    `/api/v1/contents/tables/${tableId}/columns`,
   );
   const rawColumns = ((colRes as Record<string, unknown>).columns ??
     (colRes as Record<string, unknown>).data ?? []) as Record<string, unknown>[];
@@ -440,7 +440,7 @@ export async function pullTableData(tableId: string) {
   while (true) {
     const rowRes = await request<Record<string, unknown>>(
       'GET',
-      `/api/contents/tables/${tableId}/rows?page=${page}&limit=${limit}`,
+      `/api/v1/contents/tables/${tableId}/rows?page=${page}&limit=${limit}`,
     );
     const data = rowRes as Record<string, unknown>;
     const rawRows = (data.rows ?? data.data ?? []) as Record<string, unknown>[];
@@ -475,7 +475,7 @@ export async function fetchTableRowIds(tableId: string): Promise<string[]> {
   while (true) {
     const res = (await request<Record<string, unknown>>(
       'GET',
-      `/api/contents/tables/${tableId}/rows?page=${page}&limit=${limit}`,
+      `/api/v1/contents/tables/${tableId}/rows?page=${page}&limit=${limit}`,
     )) as Record<string, unknown>;
     const data = (res.data ?? {}) as Record<string, unknown>;
     const rawRows = (data.rows ?? []) as Record<string, unknown>[];
@@ -497,7 +497,7 @@ export async function deleteTableRows(tableId: string, rowIds: string[]): Promis
   let deleted = 0;
   for (let i = 0; i < rowIds.length; i += 100) {
     const chunk = rowIds.slice(i, i + 100);
-    await request('DELETE', `/api/contents/tables/${tableId}/rows`, { row_ids: chunk });
+    await request('DELETE', `/api/v1/contents/tables/${tableId}/rows`, { row_ids: chunk });
     deleted += chunk.length;
   }
   return deleted;
@@ -517,7 +517,7 @@ export interface ContentSummary {
 export async function listChildren(folderId: string): Promise<ContentSummary[]> {
   const res = await request<Record<string, unknown>>(
     'GET',
-    `/api/contents?parent_content_id=${folderId}&limit=100`,
+    `/api/v1/contents?parent_content_id=${folderId}&limit=100`,
   );
   // 公開 API list レスポンスは `data` が item 配列（wire=snake_case）。
   return ((res as Record<string, unknown>).data as ContentSummary[]) ?? [];
@@ -527,7 +527,7 @@ export async function listRootContents(mineOnly: boolean): Promise<ContentSummar
   const params = mineOnly
     ? 'scope=all&limit=100&created_by_me=true'
     : 'scope=all&limit=100';
-  const res = await request<Record<string, unknown>>('GET', `/api/contents?${params}`);
+  const res = await request<Record<string, unknown>>('GET', `/api/v1/contents?${params}`);
   return ((res as Record<string, unknown>).data as ContentSummary[]) ?? [];
 }
 

@@ -2,7 +2,7 @@
  * 拡張設定（Extensions: スタイル/スクリプト/カスタム処理）のファイルパス同期
  *
  * manifest の extensions[] がローカルのコードファイルをパス参照する。push はファイルを読んで
- * external canonical API（/api/contents/:id/extensions）へ送り、pull は code をファイルへ
+ * external canonical API（/api/v1/contents/:id/extensions）へ送り、pull は code をファイルへ
  * 書き戻す。受託開発の管理・納品がファイルベースで完結する。
  */
 
