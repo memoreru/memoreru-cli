@@ -3,3 +3,7 @@ dist/
 bun.lock
 *.tgz
 .memoreru/
+
+# エージェント用の作業指示 (ローカル専用)
+AGENTS.md
+CLAUDE.md
