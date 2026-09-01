@@ -15,14 +15,14 @@ import {
   triggerTypesOf,
 } from './extensions-sync.js';
 
-const rec = (over: Partial<import('./api.js').ExtensionRecord> & { extension_id: string }) => ({
-  content_id: 'c1',
+const rec = (over: Partial<import('./api.js').ExtensionRecord> & { extensionId: string }) => ({
+  contentId: 'c1',
   title: 'X',
   type: 'script' as const,
   code: '',
-  file_name: null,
-  is_disabled: false,
-  execution_order: null,
+  fileName: null,
+  isDisabled: false,
+  executionOrder: null,
   version: 1,
   ...over,
 });
@@ -46,18 +46,18 @@ test('resolveExtensionFilePath: 自ディレクトリそのものは拒否する
 
 test('planExtensionSync: file_name 一致は更新に振り分ける', () => {
   const entries: ExtensionManifestEntry[] = [{ type: 'script', file: 'scripts/a.js' }];
-  const existing = [rec({ extension_id: 's1', file_name: 'scripts/a.js', version: 3 })];
+  const existing = [rec({ extensionId: 's1', fileName: 'scripts/a.js', version: 3 })];
   const { toCreate, toUpdate } = planExtensionSync(entries, existing);
   assert.equal(toCreate.length, 0);
   assert.equal(toUpdate.length, 1);
-  assert.equal(toUpdate[0].existing.extension_id, 's1');
+  assert.equal(toUpdate[0].existing.extensionId, 's1');
 });
 
 test('planExtensionSync: extension_id 一致は file_name が違っても更新に振り分ける', () => {
   const entries: ExtensionManifestEntry[] = [
     { type: 'script', file: 'scripts/renamed.js', extension_id: 's1' },
   ];
-  const existing = [rec({ extension_id: 's1', file_name: 'scripts/old.js' })];
+  const existing = [rec({ extensionId: 's1', fileName: 'scripts/old.js' })];
   const { toCreate, toUpdate } = planExtensionSync(entries, existing);
   assert.equal(toCreate.length, 0);
   assert.equal(toUpdate.length, 1);
@@ -73,14 +73,14 @@ test('planExtensionSync: 未一致は作成に振り分ける', () => {
 test('planExtensionSync: manifest に無い既存は toDelete（prune 候補）に入る', () => {
   const entries: ExtensionManifestEntry[] = [{ type: 'script', file: 'scripts/keep.js' }];
   const existing = [
-    rec({ extension_id: 'keep', file_name: 'scripts/keep.js' }),
-    rec({ extension_id: 'orphan', file_name: 'scripts/removed.js' }),
+    rec({ extensionId: 'keep', fileName: 'scripts/keep.js' }),
+    rec({ extensionId: 'orphan', fileName: 'scripts/removed.js' }),
   ];
   const { toCreate, toUpdate, toDelete } = planExtensionSync(entries, existing);
   assert.equal(toCreate.length, 0);
   assert.equal(toUpdate.length, 1);
   assert.equal(toDelete.length, 1);
-  assert.equal(toDelete[0].extension_id, 'orphan');
+  assert.equal(toDelete[0].extensionId, 'orphan');
 });
 
 test('triggerTypesOf: オブジェクト配列を trigger_type 文字列へ正規化', () => {

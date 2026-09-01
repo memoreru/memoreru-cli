@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.0 (2026-09-02)
+
+### Changed（サーバー側の API camelCase 化に追随）
+
+- **CLI が送受信する public / external API のキー名を camelCase に変更しました**。
+  `content_id` / `csv_data` / `row_ids` などの API 通信キーは、`contentId` /
+  `csvData` / `rowIds` などを使用します。
+- **重要**: 本バージョンは camelCase 化後の Memoreru サーバーでのみ動作します。旧バージョンの
+  CLI を新サーバーに接続すると同期できなくなるため、`npm install -g @memoreru-sdk/cli@latest`
+  で更新してください。ローカルの `.memoreru.json` マニフェストおよび CSV のファイル形式
+  （`content_id`、`row_id` など）は変更されません。
+
 ## 1.4.0 (2026-08-09)
 
 ### Changed（サーバー側の API 再編に追随）

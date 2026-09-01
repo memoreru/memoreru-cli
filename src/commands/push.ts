@@ -88,57 +88,57 @@ async function pushSingle(
   console.log(`\n🚀 ${meta.title} (${contentType})`);
 
   const payload: Record<string, unknown> = {
-    content_type: contentType,
+    contentType,
     title: meta.title,
     scope: meta.scope ?? 'private',
     language: meta.language ?? 'en',
-    publish_status: meta.publish_status ?? 'published',
+    publishStatus: meta.publish_status ?? 'published',
   };
 
   // 既存コンテンツの更新
   if (meta.content_id) {
-    payload.content_id = meta.content_id;
+    payload.contentId = meta.content_id;
   }
 
   // メタデータフィールドをコピー
-  const metaFields = [
-    'description',
-    'description_expanded',
-    'slug',
-    'category',
-    'label',
+  const metaFields: Array<[string, string]> = [
+    ['description', 'description'],
+    ['description_expanded', 'descriptionExpanded'],
+    ['slug', 'slug'],
+    ['category', 'category'],
+    ['label', 'label'],
     // 日時 / 場所は単一 datetime / location のみ送信（flat date_* / location_* は撤去済み）。
-    'datetime',
-    'location',
-    'sources',
-    'system_type',
-    'custom_order',
-    'team_id',
-    'template_group_tenant_id',
-    'template_group_id',
-    'scheduled_at',
-    'expires_at',
-    'discovery',
-    'access_level',
-    'can_embed',
-    'can_ai_crawl',
-    'has_password',
-    'is_suspended',
-    'is_archived',
-    'is_pinned',
-    'is_locked',
-    'auto_summary',
-    'auto_translate',
+    ['datetime', 'datetime'],
+    ['location', 'location'],
+    ['sources', 'sources'],
+    ['system_type', 'systemType'],
+    ['custom_order', 'customOrder'],
+    ['team_id', 'teamId'],
+    ['template_group_tenant_id', 'templateGroupTenantId'],
+    ['template_group_id', 'templateGroupId'],
+    ['scheduled_at', 'scheduledAt'],
+    ['expires_at', 'expiresAt'],
+    ['discovery', 'discovery'],
+    ['access_level', 'accessLevel'],
+    ['can_embed', 'canEmbed'],
+    ['can_ai_crawl', 'canAiCrawl'],
+    ['has_password', 'hasPassword'],
+    ['is_suspended', 'isSuspended'],
+    ['is_archived', 'isArchived'],
+    ['is_pinned', 'isPinned'],
+    ['is_locked', 'isLocked'],
+    ['auto_summary', 'autoSummary'],
+    ['auto_translate', 'autoTranslate'],
   ];
-  for (const key of metaFields) {
-    if (meta[key] !== undefined) payload[key] = meta[key];
+  for (const [manifestKey, apiKey] of metaFields) {
+    if (meta[manifestKey] !== undefined) payload[apiKey] = meta[manifestKey];
   }
 
   // 配列フィールド（undefined=触らない、[]=クリア、[...]=設定）
   if (Array.isArray(meta.tags)) payload.tags = meta.tags;
   if (Array.isArray(meta.persons)) payload.persons = meta.persons;
 
-  if (entry.parentContentId) payload.parent_content_id = entry.parentContentId;
+  if (entry.parentContentId) payload.parentContentId = entry.parentContentId;
 
   // Body 読み込み
   let deferredImages: { localPath: string; data: string; mimeType: string }[] = [];
@@ -181,7 +181,7 @@ async function pushSingle(
         // 無い場合 (fresh clone / 初回) は全行送信。MEMORERU_PUSH_ALL_ROWS=1 で常に全行送信
         // (サーバ側を直接編集した等でスナップショット差分を信頼できないときの escape hatch)。
         // スナップショットに無いキーの削除はここでは行わない (削除同期は呼び出し側の責務)。
-        payload.match_column = matchColumn;
+        payload.matchColumn = matchColumn;
         const matchSnapshot =
           process.env.MEMORERU_PUSH_ALL_ROWS === '1' || !meta.content_id
             ? null
@@ -199,9 +199,9 @@ async function pushSingle(
           } else {
             console.log(`   📊 ${diff.changedCount} changed, ${diff.unchangedCount} unchanged (match=${matchHeader})`);
           }
-          payload.csv_data = diff.changedCsv;
+          payload.csvData = diff.changedCsv;
         } else {
-          payload.csv_data = csvContent;
+          payload.csvData = csvContent;
         }
       } else if (hasRowIdColumn(csvContent)) {
         // row_id + version 付き CSV → 差分pushを試みる
@@ -215,21 +215,21 @@ async function pushSingle(
           if (diff.changedRowIds.length === 0) {
             console.log('   ℹ️ No row changes detected');
           }
-          payload.csv_data = diff.changedCsvData;
-          payload.row_ids = diff.changedRowIds;
-          payload.row_versions = diff.changedRowVersions;
+          payload.csvData = diff.changedCsvData;
+          payload.rowIds = diff.changedRowIds;
+          payload.rowVersions = diff.changedRowVersions;
           // 未変更行の情報を保持（CSV書き戻し時に必要）
           (payload as Record<string, unknown>)._unchangedRows = diff.unchangedRows;
         } else {
           // スナップショットなし → 全行送信
           const { csvData, rowIds, rowVersions } = extractRowMeta(csvContent);
-          payload.csv_data = csvData;
-          payload.row_ids = rowIds;
-          payload.row_versions = rowVersions;
+          payload.csvData = csvData;
+          payload.rowIds = rowIds;
+          payload.rowVersions = rowVersions;
         }
       } else {
         // オリジナル CSV（row_id なし）
-        payload.csv_data = csvContent;
+        payload.csvData = csvContent;
       }
     }
     // columns があればサーバーに送信（ID書き戻し用 + 型指定用 + 列設定）
@@ -244,13 +244,13 @@ async function pushSingle(
         columns.filter(c => c.id && c.name).map(c => [c.name, c.id!])
       );
       if (Object.keys(columnIds).length > 0) {
-        payload.column_ids = columnIds;
+        payload.columnIds = columnIds;
       }
       const columnTypes = Object.fromEntries(
         columns.filter(c => c.type && c.name).map(c => [c.name, c.type!])
       );
       if (Object.keys(columnTypes).length > 0) {
-        payload.column_types = columnTypes;
+        payload.columnTypes = columnTypes;
       }
       // 列設定（select 選択肢 / required / description）。サーバが key 照合で冪等反映する。
       const columnSettings = Object.fromEntries(
@@ -259,12 +259,12 @@ async function pushSingle(
           .map(c => [c.name, c.settings!])
       );
       if (Object.keys(columnSettings).length > 0) {
-        payload.column_settings = columnSettings;
+        payload.columnSettings = columnSettings;
       }
     }
     // 列の明示削除（適用可否はサーバのポリシー/権限に従う。所属外 id は無視される）
     if (deleteColumnIds.length > 0) {
-      payload.delete_column_ids = deleteColumnIds;
+      payload.deleteColumnIds = deleteColumnIds;
     }
   } else if (['view', 'graph', 'dashboard', 'screen', 'report', 'workflow'].includes(contentType)) {
     const settingsPath = fileName ? join(dirPath, fileName) : join(dirPath, 'settings.json');
@@ -309,20 +309,20 @@ async function pushSingle(
 
   const result = await upsertContent(payload);
   const action = result.created ? 'created' : 'updated';
-  console.log(`   ✅ ${action} (${result.content_id})`);
+  console.log(`   ✅ ${action} (${result.contentId})`);
 
   // 個別アップロードが必要な場合
   if (deferredImages.length > 0) {
     console.log(`   📸 Uploading ${deferredImages.length} image(s) individually...`);
     let convertedBody = payload.body as string;
     for (const img of deferredImages) {
-      const { localPath, url, skipped } = await uploadImage(result.content_id, img);
+      const { localPath, url, skipped } = await uploadImage(result.contentId, img);
       // Markdown内のローカルパスをAPIパスに置換
       convertedBody = convertedBody.split(`](${localPath})`).join(`](${url})`);
       console.log(skipped ? `   ⏭ ${localPath} (unchanged)` : `   ✓ ${localPath}`);
     }
     // 置換済みbodyをpush（画像なし）
-    await pushContent(result.content_id, convertedBody, [], contentType as 'page' | 'slide');
+    await pushContent(result.contentId, convertedBody, [], contentType as 'page' | 'slide');
     console.log(`   ✅ Body updated with image URLs`);
   }
 
@@ -336,8 +336,8 @@ async function pushSingle(
         .map(c => [c.name!, c.settings!])
     );
     const columns = result.columns.map(c => {
-      const settings = settingsByName.get(c.column_name);
-      const base = { id: c.column_id, name: c.column_name, type: c.column_type };
+      const settings = settingsByName.get(c.columnName);
+      const base = { id: c.columnId, name: c.columnName, type: c.columnType };
       return settings ? { ...base, settings } : base;
     });
     updateManifestEntry(dirPath, fileName, { columns });
@@ -348,7 +348,7 @@ async function pushSingle(
   // --prune（または meta.prune）で manifest に無い既存スクリプトを削除。
   if (Array.isArray(meta.extensions) && meta.extensions.length > 0) {
     const updated = await pushExtensionsForContent(
-      result.content_id,
+      result.contentId,
       dirPath,
       meta.extensions as ExtensionManifestEntry[],
       { prune: prune || meta.prune === true },
@@ -364,8 +364,8 @@ async function pushSingle(
   let finalCsvContent: string | undefined;
   if (
     contentType === 'table' &&
-    result.row_ids &&
-    result.row_ids.length > 0 &&
+    result.rowIds &&
+    result.rowIds.length > 0 &&
     fileName &&
     typeof meta.match_column !== 'string'
   ) {
@@ -388,11 +388,11 @@ async function pushSingle(
       rowId: string;
       version: number;
     }[];
-    const allRowIds = [...result.row_ids];
-    const allVersions = [...(result.row_versions ?? result.row_ids.map(() => 1))];
+    const allRowIds = [...result.rowIds];
+    const allVersions = [...(result.rowVersions ?? result.rowIds.map(() => 1))];
 
     // 競合行のrow_idセット（ローカルversionを維持するため）
-    const conflictRowIds = new Set((result.conflicts ?? []).map(c => c.row_id));
+    const conflictRowIds = new Set((result.conflicts ?? []).map(c => c.rowId));
 
     // 未変更行を末尾に追加（サーバーには送信していないが、CSVには残す必要がある）
     // ただし、未変更行のデータは現在のCSVからそのまま引き継ぐ
@@ -404,7 +404,7 @@ async function pushSingle(
       const header = originalDataLines[0] ?? '';
 
       // 変更行のデータ（サーバーに送った分）
-      const changedDataLines = (payload.csv_data as string).split('\n');
+      const changedDataLines = (payload.csvData as string).split('\n');
       const changedHeader = changedDataLines[0] ?? '';
 
       // 変更行と未変更行をrow_id順に再構成
@@ -415,8 +415,8 @@ async function pushSingle(
         if (rid) rowDataMap.set(rid, originalDataLines[i + 1] ?? '');
       }
       // 変更行: push結果のデータで上書き（順序は result.row_ids と一致）
-      for (let i = 0; i < result.row_ids.length; i++) {
-        const rid = result.row_ids[i];
+      for (let i = 0; i < result.rowIds.length; i++) {
+        const rid = result.rowIds[i];
         if (rid && changedDataLines[i + 1] !== undefined) {
           rowDataMap.set(rid, changedDataLines[i + 1]);
         }
@@ -436,10 +436,10 @@ async function pushSingle(
           if (conflictRowIds.has(rid)) {
             finalVersions.push(originalMeta.rowVersions[i] ?? 1);
           } else {
-            const resultIdx = result.row_ids.indexOf(rid);
+            const resultIdx = result.rowIds.indexOf(rid);
             finalVersions.push(
-              resultIdx >= 0 && result.row_versions
-                ? result.row_versions[resultIdx]
+              resultIdx >= 0 && result.rowVersions
+                ? result.rowVersions[resultIdx]
                 : (originalMeta.rowVersions[i] ?? 1)
             );
           }
@@ -450,9 +450,9 @@ async function pushSingle(
       // 新規行（元CSVにないrow_id）を末尾に追加
       for (const [rid, data] of rowDataMap) {
         finalRowIds.push(rid);
-        const resultIdx = result.row_ids.indexOf(rid);
+        const resultIdx = result.rowIds.indexOf(rid);
         finalVersions.push(
-          resultIdx >= 0 && result.row_versions ? result.row_versions[resultIdx] : 1
+          resultIdx >= 0 && result.rowVersions ? result.rowVersions[resultIdx] : 1
         );
         finalDataLines.push(data);
       }
@@ -472,7 +472,7 @@ async function pushSingle(
           }
         }
       }
-      const csvData = payload.csv_data as string;
+      const csvData = payload.csvData as string;
       writeRowIdCsv(csvPath, csvData, allRowIds, allVersions);
       finalCsvContent = readMarkdown(csvPath);
     }
@@ -481,7 +481,7 @@ async function pushSingle(
     if (result.conflicts && result.conflicts.length > 0) {
       for (const c of result.conflicts) {
         console.log(
-          `   ⚠️ Conflict: ${c.row_id} (local v${c.expected_version}, server v${c.current_version}) — skipped`
+          `   ⚠️ Conflict: ${c.rowId} (local v${c.expectedVersion}, server v${c.currentVersion}) — skipped`
         );
       }
       console.log(`   → Run 'memoreru pull' to resolve conflicts`);
@@ -490,7 +490,7 @@ async function pushSingle(
       hasUnresolvedConflicts = true;
     }
 
-    const changedCount = result.row_ids.length - (result.conflicts?.length ?? 0);
+    const changedCount = result.rowIds.length - (result.conflicts?.length ?? 0);
     const unchangedCount = unchangedRows.length;
     console.log(
       `   📊 ${changedCount} changed, ${unchangedCount} unchanged${result.conflicts?.length ? `, ${result.conflicts.length} conflicts` : ''}`
@@ -514,10 +514,10 @@ async function pushSingle(
         extractRowMeta(pruneCsv).rowIds.filter((r): r is string => !!r)
       );
       if (localIds.size > 0) {
-        const serverIds = await fetchTableRowIds(result.content_id);
+        const serverIds = await fetchTableRowIds(result.contentId);
         const stale = serverIds.filter(id => !localIds.has(id));
         if (stale.length > 0) {
-          const n = await deleteTableRows(result.content_id, stale);
+          const n = await deleteTableRows(result.contentId, stale);
           console.log(`   🗑️  prune: ${n} 行を削除（ローカル CSV に無いサーバ行）`);
         } else {
           console.log('   🗑️  prune: 削除対象なし');
@@ -533,25 +533,28 @@ async function pushSingle(
   prepareSyncState(
     projectRoot,
     state,
-    result.content_id,
+    result.contentId,
     entry,
-    excludeConflictRowsFromCsv(finalCsvContent ?? rawFileContent ?? '', result.conflicts)
+    excludeConflictRowsFromCsv(
+      finalCsvContent ?? rawFileContent ?? '',
+      result.conflicts?.map(conflict => ({ row_id: conflict.rowId })),
+    )
   );
 
   // 新規作成時: content_id をマニフェストに書き戻し
   if (result.created) {
     if (fileName) {
-      updateManifestEntry(dirPath, fileName, { content_id: result.content_id });
+      updateManifestEntry(dirPath, fileName, { content_id: result.contentId });
     } else if (meta.content_type === 'folder') {
       // フォルダは親ディレクトリのマニフェストにキーがある
       const folderName = basename(dirPath);
       const parentDir = dirname(dirPath);
-      updateManifestEntry(parentDir, folderName, { content_id: result.content_id });
+      updateManifestEntry(parentDir, folderName, { content_id: result.contentId });
     }
   }
 
   // content_id を返す（フォルダの場合、子エントリの parentContentId に使用）
-  return result.content_id;
+  return result.contentId;
 }
 
 export async function pushCommand(

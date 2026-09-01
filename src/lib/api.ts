@@ -124,20 +124,20 @@ export async function pullContent(contentId: string, contentType: 'page' | 'slid
 
 // =============================================================================
 // 拡張設定（Extensions: スタイル / スクリプト / カスタム処理）
-// external canonical API: /api/v1/contents/:content_id/extensions
+// external canonical API: /api/v1/contents/:contentId/extensions
 // =============================================================================
 
 export type ExtensionType = 'style' | 'script' | 'custom_process';
 
 export interface ExtensionRecord {
-  extension_id: string;
-  content_id: string;
+  extensionId: string;
+  contentId: string;
   title: string;
   type: ExtensionType;
   code: string;
-  file_name: string | null;
-  is_disabled: boolean;
-  execution_order: string | null;
+  fileName: string | null;
+  isDisabled: boolean;
+  executionOrder: string | null;
   version: number;
   triggers?: unknown[];
 }
@@ -146,9 +146,9 @@ export interface CreateExtensionInput {
   title: string;
   type: ExtensionType;
   code?: string;
-  file_name?: string;
-  is_disabled?: boolean;
-  execution_order?: string;
+  fileName?: string;
+  isDisabled?: boolean;
+  executionOrder?: string;
   triggers?: string[];
 }
 
@@ -156,9 +156,9 @@ export interface UpdateExtensionInput {
   version: number;
   title?: string;
   code?: string;
-  file_name?: string;
-  is_disabled?: boolean;
-  execution_order?: string;
+  fileName?: string;
+  isDisabled?: boolean;
+  executionOrder?: string;
   triggers?: string[];
 }
 
@@ -219,8 +219,8 @@ export type IconInput =
   | null;
 
 export interface UpsertInput {
-  content_id?: string;
-  content_type:
+  contentId?: string;
+  contentType:
     | 'folder'
     | 'page'
     | 'table'
@@ -235,15 +235,21 @@ export interface UpsertInput {
   scope?: 'public' | 'team' | 'private';
   body?: string;
   images?: PushImage[];
-  csv_data?: string;
+  csvData?: string;
+  columnIds?: Record<string, string>;
+  columnTypes?: Record<string, string>;
+  columnSettings?: Record<string, Record<string, unknown>>;
+  deleteColumnIds?: string[];
+  rowIds?: Array<string | null>;
+  rowVersions?: Array<number | null>;
   /**
    * 照合列 upsert: この列名(or column_id)の値で既存行を照合して update/create する。
    * 指定すると row_id を CSV に持たずにキー一致で冪等更新できる（fresh clone でも動く）。
    */
-  match_column?: string;
+  matchColumn?: string;
   settings?: Record<string, unknown>;
   description?: string;
-  description_expanded?: boolean;
+  descriptionExpanded?: boolean;
   category?: string;
   label?: string;
   tags?: string[];
@@ -267,33 +273,37 @@ export interface UpsertInput {
   persons?: string[];
   sources?: string;
   language?: string;
-  team_id?: string;
-  parent_content_id?: string;
-  publish_status?: 'draft' | 'published';
-  scheduled_at?: string;
-  expires_at?: string;
-  is_suspended?: boolean;
-  is_archived?: boolean;
+  systemType?: string;
+  customOrder?: number;
+  teamId?: string;
+  parentContentId?: string;
+  templateGroupTenantId?: string;
+  templateGroupId?: string;
+  publishStatus?: 'draft' | 'published';
+  scheduledAt?: string;
+  expiresAt?: string;
+  isSuspended?: boolean;
+  isArchived?: boolean;
   discovery?: 'listed' | 'unlisted' | 'profile';
-  access_level?: 'open' | 'login_required' | 'followers_only';
-  can_embed?: boolean;
-  can_ai_crawl?: boolean;
-  has_password?: boolean;
-  is_pinned?: boolean;
-  is_locked?: boolean;
-  auto_summary?: boolean;
-  auto_translate?: boolean;
+  accessLevel?: 'open' | 'login_required' | 'followers_only';
+  canEmbed?: boolean;
+  canAiCrawl?: boolean;
+  hasPassword?: boolean;
+  isPinned?: boolean;
+  isLocked?: boolean;
+  autoSummary?: boolean;
+  autoTranslate?: boolean;
 }
 
 export interface UpsertResult {
-  content_id: string;
+  contentId: string;
   created: boolean;
   uploadedCount: number;
   skippedCount: number;
-  columns?: { column_name: string; column_id: string; column_type: string }[];
-  row_ids?: string[];
-  row_versions?: number[];
-  conflicts?: { row_id: string; expected_version: number; current_version: number }[];
+  columns?: { columnName: string; columnId: string; columnType: string }[];
+  rowIds?: string[];
+  rowVersions?: number[];
+  conflicts?: { rowId: string; expectedVersion: number; currentVersion: number }[];
 }
 
 async function upsertOnce(input: UpsertInput | Record<string, unknown>): Promise<UpsertResult> {
@@ -322,26 +332,26 @@ export async function upsertContent(
   input: UpsertInput | Record<string, unknown>
 ): Promise<UpsertResult> {
   const rec = input as Record<string, unknown>;
-  const csv = typeof rec.csv_data === 'string' ? rec.csv_data : undefined;
+  const csv = typeof rec.csvData === 'string' ? rec.csvData : undefined;
 
-  if (rec.content_type !== 'table' || !csv) return upsertOnce(input);
+  if (rec.contentType !== 'table' || !csv) return upsertOnce(input);
 
   const { header, dataRows } = splitCsvRows(csv);
   if (dataRows.length <= ROW_CHUNK_SIZE) return upsertOnce(input);
 
-  const rowIds = Array.isArray(rec.row_ids) ? (rec.row_ids as (string | null)[]) : undefined;
-  const rowVersions = Array.isArray(rec.row_versions)
-    ? (rec.row_versions as (number | null)[])
+  const rowIds = Array.isArray(rec.rowIds) ? (rec.rowIds as (string | null)[]) : undefined;
+  const rowVersions = Array.isArray(rec.rowVersions)
+    ? (rec.rowVersions as (number | null)[])
     : undefined;
   // 照合列 upsert モード: 各チャンクは csv_data + match_column を送る (row_id 不要)。
-  const matchColumn = typeof rec.match_column === 'string' ? rec.match_column : undefined;
+  const matchColumn = typeof rec.matchColumn === 'string' ? rec.matchColumn : undefined;
 
   const chunkCount = Math.ceil(dataRows.length / ROW_CHUNK_SIZE);
   console.log(
     `   ✂️  ${dataRows.length} 行を ${chunkCount} 分割で push (1 チャンク ${ROW_CHUNK_SIZE} 行)`
   );
 
-  let contentId = typeof rec.content_id === 'string' ? rec.content_id : undefined;
+  let contentId = typeof rec.contentId === 'string' ? rec.contentId : undefined;
   let created = false;
   let columns: UpsertResult['columns'];
   const allRowIds: string[] = [];
@@ -356,54 +366,54 @@ export async function upsertContent(
     let chunkInput: Record<string, unknown>;
     if (i === 0) {
       // 先頭チャンク: 全メタデータ込みで作成/更新し、content_id / columns を確定する。
-      chunkInput = { ...rec, csv_data: chunkCsv };
-      if (rowIds) chunkInput.row_ids = rowIds.slice(start, start + ROW_CHUNK_SIZE);
-      if (rowVersions) chunkInput.row_versions = rowVersions.slice(start, start + ROW_CHUNK_SIZE);
+      chunkInput = { ...rec, csvData: chunkCsv };
+      if (rowIds) chunkInput.rowIds = rowIds.slice(start, start + ROW_CHUNK_SIZE);
+      if (rowVersions) chunkInput.rowVersions = rowVersions.slice(start, start + ROW_CHUNK_SIZE);
     } else if (matchColumn) {
       // 後続チャンク (照合列): content_id へ match_column で upsert (row_id 不要)。
       chunkInput = {
-        content_id: contentId,
-        content_type: 'table',
+        contentId,
+        contentType: 'table',
         title: rec.title,
-        csv_data: chunkCsv,
-        match_column: matchColumn,
+        csvData: chunkCsv,
+        matchColumn,
       };
-      if (rec.column_ids) chunkInput.column_ids = rec.column_ids;
+      if (rec.columnIds) chunkInput.columnIds = rec.columnIds;
     } else {
       // 後続チャンク (row_id): content_id へ追記。row_ids が無いと既存テーブルで skip されるため、
       // 元の row_ids slice か、新規行なら null 配列を必ず渡して upsert モードに入れる。
       chunkInput = {
-        content_id: contentId,
-        content_type: 'table',
+        contentId,
+        contentType: 'table',
         title: rec.title,
-        csv_data: chunkCsv,
-        row_ids: rowIds ? rowIds.slice(start, start + ROW_CHUNK_SIZE) : slice.map(() => null),
+        csvData: chunkCsv,
+        rowIds: rowIds ? rowIds.slice(start, start + ROW_CHUNK_SIZE) : slice.map(() => null),
       };
-      if (rowVersions) chunkInput.row_versions = rowVersions.slice(start, start + ROW_CHUNK_SIZE);
+      if (rowVersions) chunkInput.rowVersions = rowVersions.slice(start, start + ROW_CHUNK_SIZE);
       // header→column_id の対応のみ再送 (列は先頭チャンクで作成済。名前照合でも足りるが冪等保険)。
-      if (rec.column_ids) chunkInput.column_ids = rec.column_ids;
+      if (rec.columnIds) chunkInput.columnIds = rec.columnIds;
     }
 
     const res = await upsertOnce(chunkInput);
     if (i === 0) {
-      contentId = res.content_id;
+      contentId = res.contentId;
       created = res.created;
       columns = res.columns;
     }
-    if (res.row_ids) allRowIds.push(...res.row_ids);
-    if (res.row_versions) allRowVersions.push(...res.row_versions);
+    if (res.rowIds) allRowIds.push(...res.rowIds);
+    if (res.rowVersions) allRowVersions.push(...res.rowVersions);
     if (res.conflicts) allConflicts.push(...res.conflicts);
     console.log(`      ✓ チャンク ${i + 1}/${chunkCount} (${slice.length} 行)`);
   }
 
   return {
-    content_id: contentId as string,
+    contentId: contentId as string,
     created,
     uploadedCount: 0,
     skippedCount: 0,
     columns,
-    row_ids: allRowIds,
-    row_versions: allRowVersions,
+    rowIds: allRowIds,
+    rowVersions: allRowVersions,
     conflicts: allConflicts,
   };
 }
@@ -423,13 +433,13 @@ export async function pullTableData(tableId: string) {
     'GET',
     `/api/v1/contents/tables/${tableId}/columns`,
   );
-  const rawColumns = ((colRes as Record<string, unknown>).columns ??
-    (colRes as Record<string, unknown>).data ?? []) as Record<string, unknown>[];
+  const columnData = ((colRes as Record<string, unknown>).data ?? colRes) as Record<string, unknown>;
+  const rawColumns = (columnData.columns ?? []) as Record<string, unknown>[];
 
   const columns: TableColumn[] = rawColumns.map(c => ({
-    id: c.id as string,
-    name: (c.display_name ?? c.displayName ?? c.name) as string,
-    type: (c.data_type ?? c.dataType ?? c.column_type ?? c.columnType) as string,
+    id: (c.columnId ?? c.id) as string,
+    name: (c.displayName ?? c.name) as string,
+    type: (c.dataType ?? c.columnType) as string,
   }));
 
   const idToName = new Map(columns.map(c => [c.id, c.name]));
@@ -442,21 +452,23 @@ export async function pullTableData(tableId: string) {
       'GET',
       `/api/v1/contents/tables/${tableId}/rows?page=${page}&limit=${limit}`,
     );
-    const data = rowRes as Record<string, unknown>;
-    const rawRows = (data.rows ?? data.data ?? []) as Record<string, unknown>[];
+    const response = rowRes as Record<string, unknown>;
+    const data = (response.data ?? response) as Record<string, unknown>;
+    const rawRows = (data.rows ?? []) as Record<string, unknown>[];
 
     for (const row of rawRows) {
       const converted: Record<string, unknown> = {};
-      if (row.row_id) converted.row_id = row.row_id;
+      if (row.rowId) converted.row_id = row.rowId;
       if (row.version != null) converted.version = row.version;
       for (const [key, value] of Object.entries(row)) {
-        if (key === 'row_id' || key === 'version' || key === 'display_order' || key === 'cell_settings') continue;
+        if (key === 'rowId' || key === 'version' || key === 'displayOrder' || key === 'cellSettings') continue;
         converted[idToName.get(key) ?? key] = value;
       }
       allRows.push(converted);
     }
 
-    const hasMore = (data.has_more ?? data.hasMore) as boolean | undefined;
+    const pagination = (response.pagination ?? {}) as Record<string, unknown>;
+    const hasMore = pagination.hasMore as boolean | undefined;
     if (!hasMore && rawRows.length < limit) break;
     page++;
   }
@@ -480,10 +492,10 @@ export async function fetchTableRowIds(tableId: string): Promise<string[]> {
     const data = (res.data ?? {}) as Record<string, unknown>;
     const rawRows = (data.rows ?? []) as Record<string, unknown>[];
     for (const row of rawRows) {
-      if (row.row_id) ids.push(String(row.row_id));
+      if (row.rowId) ids.push(String(row.rowId));
     }
     const pagination = (res.pagination ?? {}) as Record<string, unknown>;
-    const hasMore = pagination.has_more as boolean | undefined;
+    const hasMore = pagination.hasMore as boolean | undefined;
     if (!hasMore && rawRows.length < limit) break;
     page++;
   }
@@ -497,7 +509,7 @@ export async function deleteTableRows(tableId: string, rowIds: string[]): Promis
   let deleted = 0;
   for (let i = 0; i < rowIds.length; i += 100) {
     const chunk = rowIds.slice(i, i + 100);
-    await request('DELETE', `/api/v1/contents/tables/${tableId}/rows`, { row_ids: chunk });
+    await request('DELETE', `/api/v1/contents/tables/${tableId}/rows`, { rowIds: chunk });
     deleted += chunk.length;
   }
   return deleted;
@@ -508,24 +520,24 @@ export async function deleteTableRows(tableId: string, rowIds: string[]): Promis
 // =============================================================================
 
 export interface ContentSummary {
-  content_id: string;
+  contentId: string;
   title: string;
-  content_type: string;
+  contentType: string;
   scope: string;
 }
 
 export async function listChildren(folderId: string): Promise<ContentSummary[]> {
   const res = await request<Record<string, unknown>>(
     'GET',
-    `/api/v1/contents?parent_content_id=${folderId}&limit=100`,
+    `/api/v1/contents?parentContentId=${folderId}&limit=100`,
   );
-  // 公開 API list レスポンスは `data` が item 配列（wire=snake_case）。
+  // 公開 API list レスポンスは `data` が item 配列。
   return ((res as Record<string, unknown>).data as ContentSummary[]) ?? [];
 }
 
 export async function listRootContents(mineOnly: boolean): Promise<ContentSummary[]> {
   const params = mineOnly
-    ? 'scope=all&limit=100&created_by_me=true'
+    ? 'scope=all&limit=100&createdByMe=true'
     : 'scope=all&limit=100';
   const res = await request<Record<string, unknown>>('GET', `/api/v1/contents?${params}`);
   return ((res as Record<string, unknown>).data as ContentSummary[]) ?? [];

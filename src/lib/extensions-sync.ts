@@ -66,7 +66,7 @@ function sameTriggers(a: string[] | undefined, b: string[] | undefined): boolean
   return sa.length === sb.length && sa.every((v, i) => v === sb[i]);
 }
 
-/** push 計画: file_name（無ければ extension_id）で既存とマッチし、作成/更新/削除に振り分ける */
+/** push 計画: fileName（無ければ manifest の extension_id）で既存とマッチし、作成/更新/削除に振り分ける */
 export function planExtensionSync(
   entries: ExtensionManifestEntry[],
   existing: ExtensionRecord[],
@@ -78,8 +78,8 @@ export function planExtensionSync(
   const byFile = new Map<string, ExtensionRecord>();
   const byId = new Map<string, ExtensionRecord>();
   for (const s of existing) {
-    if (s.file_name) byFile.set(s.file_name, s);
-    byId.set(s.extension_id, s);
+    if (s.fileName) byFile.set(s.fileName, s);
+    byId.set(s.extensionId, s);
   }
   const toCreate: ExtensionManifestEntry[] = [];
   const toUpdate: Array<{ entry: ExtensionManifestEntry; existing: ExtensionRecord }> = [];
@@ -89,13 +89,13 @@ export function planExtensionSync(
       (entry.extension_id ? byId.get(entry.extension_id) : undefined) ?? byFile.get(entry.file);
     if (match) {
       toUpdate.push({ entry, existing: match });
-      matched.add(match.extension_id);
+      matched.add(match.extensionId);
     } else {
       toCreate.push(entry);
     }
   }
   // manifest に無い既存は削除候補（prune 時のみ実削除）
-  const toDelete = existing.filter(s => !matched.has(s.extension_id));
+  const toDelete = existing.filter(s => !matched.has(s.extensionId));
   return { toCreate, toUpdate, toDelete };
 }
 
@@ -114,11 +114,11 @@ function isExtensionUnchanged(
 ): boolean {
   if (code !== ex.code) return false;
   if (extensionTitleOf(entry) !== ex.title) return false;
-  if (entry.file !== (ex.file_name ?? undefined)) return false;
-  if (entry.is_disabled !== undefined && entry.is_disabled !== ex.is_disabled) return false;
+  if (entry.file !== (ex.fileName ?? undefined)) return false;
+  if (entry.is_disabled !== undefined && entry.is_disabled !== ex.isDisabled) return false;
   if (
     entry.execution_order !== undefined &&
-    entry.execution_order !== (ex.execution_order ?? undefined)
+    entry.execution_order !== (ex.executionOrder ?? undefined)
   ) {
     return false;
   }
@@ -141,7 +141,7 @@ export async function pushExtensionsForContent(
 ): Promise<ExtensionManifestEntry[]> {
   const existing = await listExtensions(contentId);
   const { toCreate, toUpdate, toDelete } = planExtensionSync(entries, existing);
-  const resultByFile = new Map<string, string>(); // file -> extension_id
+  const resultByFile = new Map<string, string>(); // file -> manifest extension_id
 
   for (const entry of toCreate) {
     const code = readFileSync(resolveExtensionFilePath(dirPath, entry.file), 'utf-8');
@@ -149,33 +149,33 @@ export async function pushExtensionsForContent(
       title: extensionTitleOf(entry),
       type: entry.type,
       code,
-      file_name: entry.file,
-      is_disabled: entry.is_disabled,
-      execution_order: entry.execution_order,
+      fileName: entry.file,
+      isDisabled: entry.is_disabled,
+      executionOrder: entry.execution_order,
       triggers: entry.triggers,
     });
-    resultByFile.set(entry.file, created.extension_id);
+    resultByFile.set(entry.file, created.extensionId);
   }
 
   for (const { entry, existing: ex } of toUpdate) {
     const code = readFileSync(resolveExtensionFilePath(dirPath, entry.file), 'utf-8');
-    resultByFile.set(entry.file, ex.extension_id);
+    resultByFile.set(entry.file, ex.extensionId);
     // 冪等: 変更が無ければ update しない（version の無駄な増加を防ぐ）
     if (isExtensionUnchanged(entry, code, ex)) continue;
-    await updateExtension(contentId, ex.extension_id, {
+    await updateExtension(contentId, ex.extensionId, {
       version: ex.version,
       title: extensionTitleOf(entry),
       code,
-      file_name: entry.file,
-      is_disabled: entry.is_disabled,
-      execution_order: entry.execution_order,
+      fileName: entry.file,
+      isDisabled: entry.is_disabled,
+      executionOrder: entry.execution_order,
       triggers: entry.triggers,
     });
   }
 
   if (opts.prune) {
     for (const s of toDelete) {
-      await deleteExtension(contentId, s.extension_id);
+      await deleteExtension(contentId, s.extensionId);
     }
   }
 
@@ -183,7 +183,7 @@ export async function pushExtensionsForContent(
 }
 
 /**
- * pull: API の拡張設定を取得し、file_name のパスへ code を書き出す。
+ * pull: API の拡張設定を取得し、fileName のパスへ code を書き出す。
  * 戻り値は manifest に書く extensions[] エントリ（execution_order / triggers も保持）。
  */
 export async function pullExtensionsForContent(
@@ -193,7 +193,7 @@ export async function pullExtensionsForContent(
   const list = await listExtensions(contentId);
   const entries: ExtensionManifestEntry[] = [];
   for (const s of list) {
-    const file = s.file_name ?? defaultExtensionFileName(s);
+    const file = s.fileName ?? defaultExtensionFileName(s);
     const target = resolveExtensionFilePath(dirPath, file);
     mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, s.code, 'utf-8');
@@ -201,10 +201,10 @@ export async function pullExtensionsForContent(
       type: s.type,
       file,
       title: s.title,
-      is_disabled: s.is_disabled,
-      extension_id: s.extension_id,
+      is_disabled: s.isDisabled,
+      extension_id: s.extensionId,
     };
-    if (s.execution_order != null) entry.execution_order = s.execution_order;
+    if (s.executionOrder != null) entry.execution_order = s.executionOrder;
     const triggers = triggerTypesOf(s.triggers);
     if (triggers && triggers.length > 0) entry.triggers = triggers;
     entries.push(entry);
@@ -224,10 +224,10 @@ function sanitizeForFileName(name: string): string {
   );
 }
 
-/** file_name を持たない既存拡張設定の既定ファイル名（type 別ディレクトリ + サニタイズ名） */
+/** fileName を持たない既存拡張設定の既定ファイル名（type 別ディレクトリ + サニタイズ名） */
 function defaultExtensionFileName(s: ExtensionRecord): string {
   const dir = s.type === 'style' ? 'styles' : 'scripts';
   const ext = s.type === 'style' ? 'css' : 'js';
-  const base = sanitizeForFileName(s.title || s.extension_id);
-  return `${dir}/${base}-${s.extension_id.slice(0, 8)}.${ext}`;
+  const base = sanitizeForFileName(s.title || s.extensionId);
+  return `${dir}/${base}-${s.extensionId.slice(0, 8)}.${ext}`;
 }

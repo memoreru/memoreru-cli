@@ -58,7 +58,7 @@ async function pullSettings(entry: ScanEntry, isPreview: boolean, projectRoot: s
     settings?: Record<string, unknown>;
     tags?: string[];
     persons?: string[];
-    thumbnail_url?: string | null;
+    thumbnailUrl?: string | null;
   };
 
   const settingsPath = fileName ? join(dirPath, fileName) : join(dirPath, 'settings.json');
@@ -209,7 +209,7 @@ async function pullSingleInner(entry: ScanEntry, isPreview: boolean, projectRoot
     images: { memoreruUrl: string; localPath: string; hash: string | null }[];
     tags?: string[];
     persons?: string[];
-    thumbnail_url?: string | null;
+    thumbnailUrl?: string | null;
   };
   if (!result.body) {
     console.log('   ℹ️Empty body');
@@ -247,9 +247,9 @@ async function pullSingleInner(entry: ScanEntry, isPreview: boolean, projectRoot
     writeMarkdown(bodyPath, result.body);
 
     // thumbnail ダウンロード
-    if (result.thumbnail_url) {
+    if (result.thumbnailUrl) {
       try {
-        const thumbBuffer = await downloadImage(result.thumbnail_url);
+        const thumbBuffer = await downloadImage(result.thumbnailUrl);
         const thumbPath = './images/thumbnail.webp';
         saveImage(dirPath, thumbPath, thumbBuffer);
         if (fileName) {
@@ -318,32 +318,32 @@ function resolveRemoteContents(
   }
 
   for (const remote of remoteContents) {
-    const existing = localMap.get(remote.content_id);
+    const existing = localMap.get(remote.contentId);
     if (existing) {
       entries.push({ dirPath: existing.dirPath, fileName: existing.fileName, meta: existing.meta });
       continue;
     }
 
-    console.log(`   + ${remote.title} (${remote.content_type})`);
+    console.log(`   + ${remote.title} (${remote.contentType})`);
 
-    const fileName = remote.content_type === 'folder'
+    const fileName = remote.contentType === 'folder'
       ? remote.title.replace(/[/\\:*?"<>|]/g, '_').slice(0, 100)
-      : inferFileName(remote.content_type, remote.title);
+      : inferFileName(remote.contentType, remote.title);
 
     const meta: MemoreruMeta = {
-      content_id: remote.content_id,
-      content_type: remote.content_type as MemoreruMeta['content_type'],
+      content_id: remote.contentId,
+      content_type: remote.contentType as MemoreruMeta['content_type'],
       title: remote.title,
     };
 
     if (!isPreview) {
-      if (remote.content_type === 'folder') {
+      if (remote.contentType === 'folder') {
         const folderPath = join(parentDir, fileName);
         if (!existsSync(folderPath)) mkdirSync(folderPath, { recursive: true });
       }
       updateManifestEntry(parentDir, fileName, {
-        content_id: remote.content_id,
-        content_type: remote.content_type,
+        content_id: remote.contentId,
+        content_type: remote.contentType,
         title: remote.title,
       });
     }
