@@ -143,6 +143,7 @@ async function pushSingle(
   // Body 読み込み
   let deferredImages: { localPath: string; data: string; mimeType: string }[] = [];
   let rawFileContent: string | undefined; // スナップショット用（ファイルの生の内容）
+  let unchangedRows: { rowId: string; version: number }[] = [];
   if (contentType === 'page' || contentType === 'slide') {
     const bodyPath = fileName ? join(dirPath, fileName) : join(dirPath, 'body.md');
     if (existsSync(bodyPath)) {
@@ -218,8 +219,8 @@ async function pushSingle(
           payload.csvData = diff.changedCsvData;
           payload.rowIds = diff.changedRowIds;
           payload.rowVersions = diff.changedRowVersions;
-          // 未変更行の情報を保持（CSV書き戻し時に必要）
-          (payload as Record<string, unknown>)._unchangedRows = diff.unchangedRows;
+          // 未変更行の情報は CSV 書き戻し用にローカルだけで保持する。
+          unchangedRows = diff.unchangedRows;
         } else {
           // スナップショットなし → 全行送信
           const { csvData, rowIds, rowVersions } = extractRowMeta(csvContent);
@@ -384,10 +385,6 @@ async function pushSingle(
     }
 
     // 差分pushの場合: 未変更行のID/versionをマージして完全なCSVを再構築
-    const unchangedRows = ((payload as Record<string, unknown>)._unchangedRows ?? []) as {
-      rowId: string;
-      version: number;
-    }[];
     const allRowIds = [...result.rowIds];
     const allVersions = [...(result.rowVersions ?? result.rowIds.map(() => 1))];
 
