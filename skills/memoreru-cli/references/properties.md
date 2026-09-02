@@ -4,12 +4,12 @@
 
 | Property | Type | Description |
 |-------|------|-------------|
-| `content_id` | string | Memoreru content ID. Auto-set after first push |
-| `content_type` | string | **Required.** `folder`, `page`, `table`, `slide`, `view`, `graph`, `dashboard` |
+| `contentId` | string | Memoreru content ID. Auto-set after first push |
+| `contentType` | string | **Required.** `folder`, `page`, `table`, `slide`, `view`, `graph`, `dashboard` |
 | `title` | string | Title. Inferred from filename if omitted |
 | `scope` | string | `public`, `team`, `private` (default: `private`) |
 | `description` | string | Description text |
-| `description_expanded` | boolean | Show description expanded (default: `false`) |
+| `descriptionExpanded` | boolean | Show description expanded (default: `false`) |
 | `category` | string | Category name or key (e.g., `technology`, `lifestyle`) |
 | `label` | string | Label |
 | `tags` | string[] | Array of tag names (e.g., `["React", "Tutorial"]`) |
@@ -36,32 +36,32 @@
 
 | Property | Type | Description |
 |-------|------|-------------|
-| `team_id` | string | Team ID (required when scope is team) |
-| `parent_id` | string | Parent folder's content_id |
-| `publish_status` | string | `draft`, `published` (default: `published`) |
-| `scheduled_at` | string | Scheduled publish time (ISO 8601, e.g., `2026-04-01T09:00:00+09:00`) |
-| `expires_at` | string | Expiration time (ISO 8601) |
-| `is_suspended` | boolean | Suspend content (default: `false`) |
-| `is_archived` | boolean | Archive content (default: `false`) |
+| `teamId` | string | Team ID (required when scope is team) |
+| `parentContentId` | string | Parent folder's contentId |
+| `publishStatus` | string | `draft`, `published` (default: `published`) |
+| `scheduledAt` | string | Scheduled publish time (ISO 8601, e.g., `2026-04-01T09:00:00+09:00`) |
+| `expiresAt` | string | Expiration time (ISO 8601) |
+| `isSuspended` | boolean | Suspend content (default: `false`) |
+| `isArchived` | boolean | Archive content (default: `false`) |
 
 ## Privacy
 
 | Property | Type | Description |
 |-------|------|-------------|
 | `discovery` | string | `listed` (searchable), `unlisted` (URL only), `profile` (profile only). Default: `listed` |
-| `access_level` | string | `open` (anyone), `login_required` (logged-in users), `followers_only` (followers). Default: `open` |
-| `can_embed` | boolean | Allow embedding (default: `true`) |
-| `can_ai_crawl` | boolean | Allow AI crawlers (default: `true`) |
-| `has_password` | boolean | Password protection (default: `false`) |
+| `accessLevel` | string | `open` (anyone), `login_required` (logged-in users), `followers_only` (followers). Default: `open` |
+| `canEmbed` | boolean | Allow embedding (default: `true`) |
+| `canAiCrawl` | boolean | Allow AI crawlers (default: `true`) |
+| `hasPassword` | boolean | Password protection (default: `false`) |
 
 ## Other
 
 | Property | Type | Description |
 |-------|------|-------------|
-| `is_pinned` | boolean | Pin to top (default: `false`) |
-| `is_locked` | boolean | Lock editing (default: `false`) |
-| `auto_summary` | boolean | Auto-generate summary (default: `false`) |
-| `auto_translate` | boolean | Auto-generate translations (default: `false`) |
+| `isPinned` | boolean | Pin to top (default: `false`) |
+| `isLocked` | boolean | Lock editing (default: `false`) |
+| `autoSummary` | boolean | Auto-generate summary (default: `false`) |
+| `autoTranslate` | boolean | Auto-generate translations (default: `false`) |
 
 ## Table Columns (auto-managed)
 
@@ -93,7 +93,7 @@ Each `options[]` element:
 Choices are reconciled **idempotently by `key`** (option_id is server-generated and never stored in the manifest).
 On every push, options are synced to the declared set; keys removed from the declaration are deleted.
 
-#### Updating existing columns (preserving content_id / column_id)
+#### Updating existing columns (preserving contentId / column_id)
 
 Existing columns are identified by `columns[].id` and updated in place (id unchanged) on re-push:
 

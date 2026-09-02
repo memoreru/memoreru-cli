@@ -27,7 +27,7 @@ export async function initCommand(
     writeFileSync(manifestPath, '{}\n');
     console.log(`   Created ${manifestPath}`);
     console.log(`\n💡 Tip: Register this folder in the parent directory's .memoreru.json:`);
-    console.log(`   "${title}": { "content_type": "folder", "title": "${title}" }`);
+    console.log(`   "${title}": { "contentType": "folder", "title": "${title}" }`);
   } else if (
     contentType === 'view' ||
     contentType === 'graph' ||
@@ -38,7 +38,7 @@ export async function initCommand(
   ) {
     const fileName = `${title}.json`;
     const manifest: Record<string, Record<string, unknown>> = {
-      [fileName]: { content_type: contentType, title },
+      [fileName]: { contentType, title },
     };
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
     console.log(`   Created ${manifestPath}`);
@@ -54,7 +54,7 @@ export async function initCommand(
 
     const manifest: Record<string, Record<string, unknown>> = {
       [fileName]: {
-        content_type: contentType,
+        contentType,
         title,
       },
     };

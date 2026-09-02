@@ -4,12 +4,12 @@
 
 | プロパティ | 型 | 説明 |
 |-----------|-----|------|
-| `content_id` | string | Memoreru 側の ID。初回 push 後に自動設定 |
-| `content_type` | string | **必須**。`folder`, `page`, `table`, `slide`, `view`, `graph`, `dashboard` |
+| `contentId` | string | Memoreru 側の ID。初回 push 後に自動設定 |
+| `contentType` | string | **必須**。`folder`, `page`, `table`, `slide`, `view`, `graph`, `dashboard` |
 | `title` | string | タイトル。省略時はファイル名から推定 |
 | `scope` | string | `public`, `team`, `private`（デフォルト: `private`） |
 | `description` | string | 説明文 |
-| `description_expanded` | boolean | 説明を展開表示する（デフォルト: `false`） |
+| `descriptionExpanded` | boolean | 説明を展開表示する（デフォルト: `false`） |
 | `category` | string | カテゴリ名またはキー（例: `テクノロジー`, `technology`） |
 | `label` | string | ラベル |
 | `tags` | string[] | タグ名の配列（例: `["React", "チュートリアル"]`） |
@@ -36,32 +36,32 @@
 
 | プロパティ | 型 | 説明 |
 |-----------|-----|------|
-| `team_id` | string | チームID（scope が team の場合に必要） |
-| `parent_id` | string | 親フォルダの content_id |
-| `publish_status` | string | `draft`, `published`（デフォルト: `published`） |
-| `scheduled_at` | string | 予約公開日時（ISO 8601。例: `2026-04-01T09:00:00+09:00`） |
-| `expires_at` | string | 公開期限（ISO 8601） |
-| `is_suspended` | boolean | 一時停止（デフォルト: `false`） |
-| `is_archived` | boolean | アーカイブ（デフォルト: `false`） |
+| `teamId` | string | チームID（scope が team の場合に必要） |
+| `parentContentId` | string | 親フォルダの contentId |
+| `publishStatus` | string | `draft`, `published`（デフォルト: `published`） |
+| `scheduledAt` | string | 予約公開日時（ISO 8601。例: `2026-04-01T09:00:00+09:00`） |
+| `expiresAt` | string | 公開期限（ISO 8601） |
+| `isSuspended` | boolean | 一時停止（デフォルト: `false`） |
+| `isArchived` | boolean | アーカイブ（デフォルト: `false`） |
 
 ## プライバシー
 
 | プロパティ | 型 | 説明 |
 |-----------|-----|------|
 | `discovery` | string | `listed`（検索可能）, `unlisted`（URL共有のみ）, `profile`（プロフィールのみ）。デフォルト: `listed` |
-| `access_level` | string | `open`（誰でも）, `login_required`（ログインユーザー）, `followers_only`（フォロワーのみ）。デフォルト: `open` |
-| `can_embed` | boolean | 埋め込み許可（デフォルト: `true`） |
-| `can_ai_crawl` | boolean | AIクローラー許可（デフォルト: `true`） |
-| `has_password` | boolean | パスワード保護（デフォルト: `false`） |
+| `accessLevel` | string | `open`（誰でも）, `login_required`（ログインユーザー）, `followers_only`（フォロワーのみ）。デフォルト: `open` |
+| `canEmbed` | boolean | 埋め込み許可（デフォルト: `true`） |
+| `canAiCrawl` | boolean | AIクローラー許可（デフォルト: `true`） |
+| `hasPassword` | boolean | パスワード保護（デフォルト: `false`） |
 
 ## その他
 
 | プロパティ | 型 | 説明 |
 |-----------|-----|------|
-| `is_pinned` | boolean | ピン留め（デフォルト: `false`） |
-| `is_locked` | boolean | 編集不可（デフォルト: `false`） |
-| `auto_summary` | boolean | 要約を自動生成（デフォルト: `false`） |
-| `auto_translate` | boolean | 翻訳版を自動生成（デフォルト: `false`） |
+| `isPinned` | boolean | ピン留め（デフォルト: `false`） |
+| `isLocked` | boolean | 編集不可（デフォルト: `false`） |
+| `autoSummary` | boolean | 要約を自動生成（デフォルト: `false`） |
+| `autoTranslate` | boolean | 翻訳版を自動生成（デフォルト: `false`） |
 
 ## テーブルカラム（自動管理）
 
@@ -93,7 +93,7 @@ CSV だけでは表現できない列設定を `settings` で宣言できます�
 選択肢は `key` 照合で**冪等反映**されます（option_id はサーバ生成。マニフェストには保存しません）。
 push のたびに `options` の内容へ同期され、宣言から消えた `key` は削除されます。
 
-#### 既存列の更新（content_id / column_id を保ったまま）
+#### 既存列の更新（contentId / column_id を保ったまま）
 
 `columns[].id` で既存列を特定し、再 push で **id を変えずに**以下を反映します:
 

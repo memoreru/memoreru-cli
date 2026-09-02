@@ -83,7 +83,7 @@ async function pushSingle(
   prune = false
 ): Promise<string | null> {
   const { dirPath, fileName, meta } = entry;
-  const contentType = meta.content_type;
+  const contentType = meta.contentType;
 
   console.log(`\n🚀 ${meta.title} (${contentType})`);
 
@@ -92,51 +92,26 @@ async function pushSingle(
     title: meta.title,
     scope: meta.scope ?? 'private',
     language: meta.language ?? 'en',
-    publishStatus: meta.publish_status ?? 'published',
+    publishStatus: meta.publishStatus ?? 'published',
   };
 
   // 既存コンテンツの更新
-  if (meta.content_id) {
-    payload.contentId = meta.content_id;
+  if (meta.contentId) {
+    payload.contentId = meta.contentId;
   }
 
-  // メタデータフィールドをコピー
-  const metaFields: Array<[string, string]> = [
-    ['description', 'description'],
-    ['description_expanded', 'descriptionExpanded'],
-    ['slug', 'slug'],
-    ['category', 'category'],
-    ['label', 'label'],
-    // 日時 / 場所は単一 datetime / location のみ送信（flat date_* / location_* は撤去済み）。
-    ['datetime', 'datetime'],
-    ['location', 'location'],
-    ['sources', 'sources'],
-    ['system_type', 'systemType'],
-    ['custom_order', 'customOrder'],
-    ['team_id', 'teamId'],
-    ['template_group_tenant_id', 'templateGroupTenantId'],
-    ['template_group_id', 'templateGroupId'],
-    ['scheduled_at', 'scheduledAt'],
-    ['expires_at', 'expiresAt'],
-    ['discovery', 'discovery'],
-    ['access_level', 'accessLevel'],
-    ['can_embed', 'canEmbed'],
-    ['can_ai_crawl', 'canAiCrawl'],
-    ['has_password', 'hasPassword'],
-    ['is_suspended', 'isSuspended'],
-    ['is_archived', 'isArchived'],
-    ['is_pinned', 'isPinned'],
-    ['is_locked', 'isLocked'],
-    ['auto_summary', 'autoSummary'],
-    ['auto_translate', 'autoTranslate'],
-  ];
-  for (const [manifestKey, apiKey] of metaFields) {
-    if (meta[manifestKey] !== undefined) payload[apiKey] = meta[manifestKey];
-  }
-
-  // 配列フィールド（undefined=触らない、[]=クリア、[...]=設定）
-  if (Array.isArray(meta.tags)) payload.tags = meta.tags;
-  if (Array.isArray(meta.persons)) payload.persons = meta.persons;
+  // manifest と API のキーは同一。ローカル専用値と変換済みの画像値は除外する。
+  const {
+    columns: _columns,
+    extensions: _extensions,
+    thumbnail: _thumbnail,
+    icon: _icon,
+    prune: _prune,
+    contentId: _contentId,
+    contentType: _contentType,
+    ...metaPayload
+  } = meta;
+  Object.assign(payload, metaPayload);
 
   if (entry.parentContentId) payload.parentContentId = entry.parentContentId;
 
@@ -175,7 +150,7 @@ async function pushSingle(
       const csvContent = readMarkdown(csvPath);
       rawFileContent = csvContent;
 
-      const matchColumn = typeof meta.match_column === 'string' ? meta.match_column : undefined;
+      const matchColumn = typeof meta.matchColumn === 'string' ? meta.matchColumn : undefined;
       if (matchColumn) {
         // 照合列 upsert: row_id を CSV に持たず、match 列の値で既存行を照合して update/create。
         // スナップショット (前回 push 成功時の CSV) があればキー比較で変更・新規行のみ送る。
@@ -184,9 +159,9 @@ async function pushSingle(
         // スナップショットに無いキーの削除はここでは行わない (削除同期は呼び出し側の責務)。
         payload.matchColumn = matchColumn;
         const matchSnapshot =
-          process.env.MEMORERU_PUSH_ALL_ROWS === '1' || !meta.content_id
+          process.env.MEMORERU_PUSH_ALL_ROWS === '1' || !meta.contentId
             ? null
-            : readSnapshot(projectRoot, meta.content_id, 'table');
+            : readSnapshot(projectRoot, meta.contentId, 'table');
         const matchHeader = resolveMatchHeaderName(
           matchColumn,
           meta.columns as Array<{ id?: string; name: string }> | undefined,
@@ -206,8 +181,8 @@ async function pushSingle(
         }
       } else if (hasRowIdColumn(csvContent)) {
         // row_id + version 付き CSV → 差分pushを試みる
-        const snapshotCsv = meta.content_id
-          ? readSnapshot(projectRoot, meta.content_id, 'table')
+        const snapshotCsv = meta.contentId
+          ? readSnapshot(projectRoot, meta.contentId, 'table')
           : null;
 
         if (snapshotCsv && hasRowIdColumn(snapshotCsv)) {
@@ -303,9 +278,9 @@ async function pushSingle(
   }
 
   if (isPreview) {
-    const action = meta.content_id ? 'update' : 'create';
+    const action = meta.contentId ? 'update' : 'create';
     console.log(`   → would ${action}`);
-    return meta.content_id ?? 'preview';
+    return meta.contentId ?? 'preview';
   }
 
   const result = await upsertContent(payload);
@@ -361,14 +336,14 @@ async function pushSingle(
   }
 
   // テーブル: row_id + version 付き CSV で上書き + バックアップ。
-  // 照合列 upsert (match_column) では row_id を source に持たないため writeback しない。
+  // 照合列 upsert (matchColumn) では row_id を source に持たないため writeback しない。
   let finalCsvContent: string | undefined;
   if (
     contentType === 'table' &&
     result.rowIds &&
     result.rowIds.length > 0 &&
     fileName &&
-    typeof meta.match_column !== 'string'
+    typeof meta.matchColumn !== 'string'
   ) {
     const csvPath = join(dirPath, fileName);
     const bakPath = join(dirPath, fileName.replace(/\.csv$/, '.bak.csv'));
@@ -497,12 +472,12 @@ async function pushSingle(
 
   // prune: ローカル CSV に無いサーバ行を削除（全投影テーブルの full-sync）。
   // 変更行の有無に関わらず実行する（version 同期で全行 unchanged でも prune は必要）。
-  // 安全策: row_id 列を持つ table のみ（match_column / row_id 無しは全削除事故防止で除外）。
+  // 安全策: row_id 列を持つ table のみ（matchColumn / row_id 無しは全削除事故防止で除外）。
   if (
     (prune || meta.prune === true) &&
     contentType === 'table' &&
     fileName &&
-    typeof meta.match_column !== 'string'
+    typeof meta.matchColumn !== 'string'
   ) {
     const prunePath = join(dirPath, fileName);
     const pruneCsv = existsSync(prunePath) ? readMarkdown(prunePath) : '';
@@ -538,19 +513,19 @@ async function pushSingle(
     )
   );
 
-  // 新規作成時: content_id をマニフェストに書き戻し
+  // 新規作成時: contentId をマニフェストに書き戻し
   if (result.created) {
     if (fileName) {
-      updateManifestEntry(dirPath, fileName, { content_id: result.contentId });
-    } else if (meta.content_type === 'folder') {
+      updateManifestEntry(dirPath, fileName, { contentId: result.contentId });
+    } else if (meta.contentType === 'folder') {
       // フォルダは親ディレクトリのマニフェストにキーがある
       const folderName = basename(dirPath);
       const parentDir = dirname(dirPath);
-      updateManifestEntry(parentDir, folderName, { content_id: result.contentId });
+      updateManifestEntry(parentDir, folderName, { contentId: result.contentId });
     }
   }
 
-  // content_id を返す（フォルダの場合、子エントリの parentContentId に使用）
+  // contentId を返す（フォルダの場合、子エントリの parentContentId に使用）
   return result.contentId;
 }
 
@@ -586,11 +561,11 @@ export async function pushCommand(
   }
 
   // 依存順にソート（フォルダ → テーブル → page/slide → view → graph → dashboard）
-  entries.sort((a, b) => typePriority(a.meta.content_type) - typePriority(b.meta.content_type));
+  entries.sort((a, b) => typePriority(a.meta.contentType) - typePriority(b.meta.contentType));
 
   console.log(`\nℹ️${entries.length} content(s) to push`);
 
-  // フォルダ push 後の content_id マップ（dirPath → content_id）
+  // フォルダ push 後の contentId マップ（dirPath → contentId）
   const folderContentIds = new Map<string, string>();
   const state = isPreview ? { version: 1 as const, contents: {} } : readState(dir);
 
@@ -599,8 +574,8 @@ export async function pushCommand(
 
   for (const entry of entries) {
     try {
-      // フォルダ push で取得した content_id を子エントリに伝播
-      if (!entry.parentContentId && entry.meta.content_type !== 'folder') {
+      // フォルダ push で取得した contentId を子エントリに伝播
+      if (!entry.parentContentId && entry.meta.contentType !== 'folder') {
         for (const [folderPath, folderId] of folderContentIds) {
           if (entry.dirPath.startsWith(folderPath)) {
             entry.parentContentId = folderId;
@@ -612,8 +587,8 @@ export async function pushCommand(
       const contentId = await pushSingle(entry, isPreview, dir, state, deleteColumnIds, doPrune);
       if (contentId) {
         succeeded++;
-        // フォルダの content_id を記録
-        if (entry.meta.content_type === 'folder') {
+        // フォルダの contentId を記録
+        if (entry.meta.contentType === 'folder') {
           folderContentIds.set(entry.dirPath, contentId);
         }
       } else {

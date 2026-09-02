@@ -21,7 +21,7 @@ export interface ScanEntry {
   fileName?: string;
   /** メタデータ */
   meta: MemoreruMeta;
-  /** 親フォルダの content_id（スキャン時に自動解決） */
+  /** 親フォルダの contentId（スキャン時に自動解決） */
   parentContentId?: string;
 }
 
@@ -43,12 +43,12 @@ export function scanDirectory(dirPath: string, parentContentId?: string, depth =
     for (const [fileName, fileMeta] of Object.entries(manifest)) {
       const meta = buildMetaFromEntry(fileName, fileMeta);
 
-      if (meta.content_type === 'folder') {
+      if (meta.contentType === 'folder') {
         // フォルダエントリ: コンテンツとして登録（中身は再帰スキャンしない）
         const folderPath = join(dirPath, fileName);
         entries.push({ dirPath: folderPath, meta, parentContentId });
-        if (meta.content_id) {
-          folderContentIds.set(fileName, meta.content_id);
+        if (meta.contentId) {
+          folderContentIds.set(fileName, meta.contentId);
         }
       } else {
         // ファイルエントリ

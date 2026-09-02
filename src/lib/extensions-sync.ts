@@ -23,11 +23,11 @@ export interface ExtensionManifestEntry {
   /** manifest ディレクトリからの相対パス（例: scripts/on-create.js） */
   file: string;
   title?: string;
-  is_disabled?: boolean;
-  execution_order?: string;
+  isDisabled?: boolean;
+  executionOrder?: string;
   triggers?: string[];
   /** push 後に書き戻される */
-  extension_id?: string;
+  extensionId?: string;
 }
 
 /**
@@ -66,7 +66,7 @@ function sameTriggers(a: string[] | undefined, b: string[] | undefined): boolean
   return sa.length === sb.length && sa.every((v, i) => v === sb[i]);
 }
 
-/** push 計画: fileName（無ければ manifest の extension_id）で既存とマッチし、作成/更新/削除に振り分ける */
+/** push 計画: fileName（無ければ manifest の extensionId）で既存とマッチし、作成/更新/削除に振り分ける */
 export function planExtensionSync(
   entries: ExtensionManifestEntry[],
   existing: ExtensionRecord[],
@@ -86,7 +86,7 @@ export function planExtensionSync(
   const matched = new Set<string>();
   for (const entry of entries) {
     const match =
-      (entry.extension_id ? byId.get(entry.extension_id) : undefined) ?? byFile.get(entry.file);
+      (entry.extensionId ? byId.get(entry.extensionId) : undefined) ?? byFile.get(entry.file);
     if (match) {
       toUpdate.push({ entry, existing: match });
       matched.add(match.extensionId);
@@ -115,10 +115,10 @@ function isExtensionUnchanged(
   if (code !== ex.code) return false;
   if (extensionTitleOf(entry) !== ex.title) return false;
   if (entry.file !== (ex.fileName ?? undefined)) return false;
-  if (entry.is_disabled !== undefined && entry.is_disabled !== ex.isDisabled) return false;
+  if (entry.isDisabled !== undefined && entry.isDisabled !== ex.isDisabled) return false;
   if (
-    entry.execution_order !== undefined &&
-    entry.execution_order !== (ex.executionOrder ?? undefined)
+    entry.executionOrder !== undefined &&
+    entry.executionOrder !== (ex.executionOrder ?? undefined)
   ) {
     return false;
   }
@@ -131,7 +131,7 @@ function isExtensionUnchanged(
 /**
  * push: manifest の extensions[] をファイルから読んで API へ反映。
  * prune=true で manifest に無い既存拡張設定を削除する。
- * 戻り値は extension_id を書き戻した更新後の entries。
+ * 戻り値は extensionId を書き戻した更新後の entries。
  */
 export async function pushExtensionsForContent(
   contentId: string,
@@ -141,7 +141,7 @@ export async function pushExtensionsForContent(
 ): Promise<ExtensionManifestEntry[]> {
   const existing = await listExtensions(contentId);
   const { toCreate, toUpdate, toDelete } = planExtensionSync(entries, existing);
-  const resultByFile = new Map<string, string>(); // file -> manifest extension_id
+  const resultByFile = new Map<string, string>(); // file -> manifest extensionId
 
   for (const entry of toCreate) {
     const code = readFileSync(resolveExtensionFilePath(dirPath, entry.file), 'utf-8');
@@ -150,8 +150,8 @@ export async function pushExtensionsForContent(
       type: entry.type,
       code,
       fileName: entry.file,
-      isDisabled: entry.is_disabled,
-      executionOrder: entry.execution_order,
+      isDisabled: entry.isDisabled,
+      executionOrder: entry.executionOrder,
       triggers: entry.triggers,
     });
     resultByFile.set(entry.file, created.extensionId);
@@ -167,8 +167,8 @@ export async function pushExtensionsForContent(
       title: extensionTitleOf(entry),
       code,
       fileName: entry.file,
-      isDisabled: entry.is_disabled,
-      executionOrder: entry.execution_order,
+      isDisabled: entry.isDisabled,
+      executionOrder: entry.executionOrder,
       triggers: entry.triggers,
     });
   }
@@ -179,12 +179,12 @@ export async function pushExtensionsForContent(
     }
   }
 
-  return entries.map(e => ({ ...e, extension_id: resultByFile.get(e.file) ?? e.extension_id }));
+  return entries.map(e => ({ ...e, extensionId: resultByFile.get(e.file) ?? e.extensionId }));
 }
 
 /**
  * pull: API の拡張設定を取得し、fileName のパスへ code を書き出す。
- * 戻り値は manifest に書く extensions[] エントリ（execution_order / triggers も保持）。
+ * 戻り値は manifest に書く extensions[] エントリ（executionOrder / triggers も保持）。
  */
 export async function pullExtensionsForContent(
   contentId: string,
@@ -201,10 +201,10 @@ export async function pullExtensionsForContent(
       type: s.type,
       file,
       title: s.title,
-      is_disabled: s.isDisabled,
-      extension_id: s.extensionId,
+      isDisabled: s.isDisabled,
+      extensionId: s.extensionId,
     };
-    if (s.executionOrder != null) entry.execution_order = s.executionOrder;
+    if (s.executionOrder != null) entry.executionOrder = s.executionOrder;
     const triggers = triggerTypesOf(s.triggers);
     if (triggers && triggers.length > 0) entry.triggers = triggers;
     entries.push(entry);

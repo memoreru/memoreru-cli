@@ -1,7 +1,7 @@
 /**
- * match_column 方式 CSV の差分計算ユーティリティ
+ * matchColumn 方式 CSV の差分計算ユーティリティ
  *
- * match_column push は row_id を持たず「照合列の値」で既存行を upsert する。
+ * matchColumn push は row_id を持たず「照合列の値」で既存行を upsert する。
  * 従来は毎回全行を送っていたが、スナップショット (前回 push 成功時の CSV) と
  * 照合列の値でキー比較し、変更・新規行のみを送ることで大型フィードの反映を高速化する。
  *
@@ -52,7 +52,7 @@ function toCsvLine(fields: string[]): string {
 }
 
 /**
- * meta.match_column (列名 or 列ID) を CSV ヘッダ名に解決する。
+ * meta.matchColumn (列名 or 列ID) を CSV ヘッダ名に解決する。
  * 列ID 指定の場合は meta.columns の id→name で引く。解決できなければそのまま返す
  * (サーバ側は列名/列ID 両対応のため、CSV ヘッダに無ければ差分は諦めて全行送信になる)。
  */

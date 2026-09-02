@@ -187,15 +187,15 @@ my-project/
 ```json
 {
   "readme.md": {
-    "content_type": "page",
+    "contentType": "page",
     "title": "プロジェクト README"
   },
   "tasks.csv": {
-    "content_type": "table",
+    "contentType": "table",
     "title": "タスク一覧"
   },
   "docs": {
-    "content_type": "folder",
+    "contentType": "folder",
     "title": "ドキュメント"
   }
 }
@@ -206,13 +206,13 @@ my-project/
 ```json
 {
   "readme.md": {
-    "content_id": "q589jor87vmbnyylb8091cik",
-    "content_type": "page",
+    "contentId": "q589jor87vmbnyylb8091cik",
+    "contentType": "page",
     "title": "プロジェクト README"
   },
   "tasks.csv": {
-    "content_id": "dyn8dapi7ckz8vvic8indjnc",
-    "content_type": "table",
+    "contentId": "dyn8dapi7ckz8vvic8indjnc",
+    "contentType": "table",
     "title": "タスク一覧",
     "columns": [
       { "id": "col_abc123", "name": "タイトル", "type": "string" },
@@ -227,19 +227,19 @@ my-project/
 
 ### プロパティ
 
-`content_type` のみ必須。それ以外は省略可能です。
+`contentType` のみ必須。それ以外は省略可能です。
 
 <details>
 <summary><strong>基本情報</strong></summary>
 
 | プロパティ | 説明 |
 |-----------|------|
-| `content_id` | 初回 push 後に自動設定 |
-| `content_type` | **必須**。`folder`, `page`, `table`, `slide`, `view`, `graph`, `dashboard` |
+| `contentId` | 初回 push 後に自動設定 |
+| `contentType` | **必須**。`folder`, `page`, `table`, `slide`, `view`, `graph`, `dashboard` |
 | `title` | 省略時はファイル名から推定 |
 | `scope` | `public`, `team`, `private`（デフォルト: `private`） |
 | `description` | 説明文 |
-| `description_expanded` | 説明を展開表示（デフォルト: `false`） |
+| `descriptionExpanded` | 説明を展開表示（デフォルト: `false`） |
 | `category` | カテゴリ名またはキー |
 | `label` | ラベル |
 | `tags` | タグ名の配列（例: `["React", "チュートリアル"]`） |
@@ -272,13 +272,13 @@ my-project/
 
 | プロパティ | 説明 |
 |-----------|------|
-| `team_id` | チームID（scope が `team` の場合に必要） |
-| `parent_id` | 親フォルダの content_id |
-| `publish_status` | `draft` または `published`（デフォルト: `published`） |
-| `scheduled_at` | 予約公開日時（ISO 8601） |
-| `expires_at` | 公開期限（ISO 8601） |
-| `is_suspended` | 一時停止（デフォルト: `false`） |
-| `is_archived` | アーカイブ（デフォルト: `false`） |
+| `teamId` | チームID（scope が `team` の場合に必要） |
+| `parentContentId` | 親フォルダの contentId |
+| `publishStatus` | `draft` または `published`（デフォルト: `published`） |
+| `scheduledAt` | 予約公開日時（ISO 8601） |
+| `expiresAt` | 公開期限（ISO 8601） |
+| `isSuspended` | 一時停止（デフォルト: `false`） |
+| `isArchived` | アーカイブ（デフォルト: `false`） |
 
 </details>
 
@@ -288,10 +288,10 @@ my-project/
 | プロパティ | 説明 |
 |-----------|------|
 | `discovery` | `listed`, `unlisted`, `profile`（デフォルト: `listed`） |
-| `access_level` | `open`, `login_required`, `followers_only`（デフォルト: `open`） |
-| `can_embed` | 埋め込み許可（デフォルト: `true`） |
-| `can_ai_crawl` | AIクローラー許可（デフォルト: `true`） |
-| `has_password` | パスワード保護（デフォルト: `false`） |
+| `accessLevel` | `open`, `login_required`, `followers_only`（デフォルト: `open`） |
+| `canEmbed` | 埋め込み許可（デフォルト: `true`） |
+| `canAiCrawl` | AIクローラー許可（デフォルト: `true`） |
+| `hasPassword` | パスワード保護（デフォルト: `false`） |
 
 </details>
 
@@ -300,10 +300,10 @@ my-project/
 
 | プロパティ | 説明 |
 |-----------|------|
-| `is_pinned` | ピン留め（デフォルト: `false`） |
-| `is_locked` | 編集ロック（デフォルト: `false`） |
-| `auto_summary` | 要約を自動生成（デフォルト: `false`） |
-| `auto_translate` | 翻訳版を自動生成（デフォルト: `false`） |
+| `isPinned` | ピン留め（デフォルト: `false`） |
+| `isLocked` | 編集ロック（デフォルト: `false`） |
+| `autoSummary` | 要約を自動生成（デフォルト: `false`） |
+| `autoTranslate` | 翻訳版を自動生成（デフォルト: `false`） |
 
 </details>
 
@@ -443,7 +443,7 @@ const page = await pullContent('q589jor87vmbnyylb8091cik');
 const table = await pullTableData('dyn8dapi7ckz8vvic8indjnc');
 
 const input: UpsertInput = {
-  content_type: 'page',
+  contentType: 'page',
   title: 'My Page',
   body: '# Hello',
 };

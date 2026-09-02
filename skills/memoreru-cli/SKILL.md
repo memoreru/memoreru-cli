@@ -30,17 +30,17 @@ Auth resolution: `--api-key` > `MEMORERU_API_KEY` > `--profile` > `.memoreru-con
 
 ```json
 {
-  "readme.md": { "content_type": "page", "title": "README" },
-  "tasks.csv": { "content_type": "table", "title": "Tasks" },
-  "docs": { "content_type": "folder", "title": "Documentation" }
+  "readme.md": { "contentType": "page", "title": "README" },
+  "tasks.csv": { "contentType": "table", "title": "Tasks" },
+  "docs": { "contentType": "folder", "title": "Documentation" }
 }
 ```
 
-- `content_type` — **Required.** folder, page, table, slide, view, graph, dashboard
-- `content_id` — Auto-set after first push. No manual setup needed
+- `contentType` — **Required.** folder, page, table, slide, view, graph, dashboard
+- `contentId` — Auto-set after first push. No manual setup needed
 - `columns` — Table only. Auto-set after push. Array of `{ id, name, type }` for unique column references
 - `scope` — public, team, private (default: private)
-- `team_id` — Required when scope is team
+- `teamId` — Required when scope is team
 
 See [references/properties.md](references/properties.md) for all properties (when/where, publishing, privacy, etc.).
 

@@ -5,11 +5,11 @@
  * memoreru status / diff でローカル変更を検知する基盤。
  *
  * .memoreru/
- * ├── state.json              # content_id → スナップショット情報
+ * ├── state.json              # contentId → スナップショット情報
  * └── snapshots/              # pull/push 時のボディコピー
- *     ├── {content_id}.md
- *     ├── {content_id}.csv
- *     └── {content_id}.json
+ *     ├── {contentId}.md
+ *     ├── {contentId}.csv
+ *     └── {contentId}.json
  */
 
 import { createHash } from 'crypto';
@@ -57,15 +57,15 @@ export interface StatusEntry {
 
 /** metaHash 計算対象のフィールド（安定した順序で列挙） */
 const META_HASH_FIELDS = [
-  'category', 'content_type', 'description', 'icon', 'label', 'language',
-  'persons', 'publish_status', 'scope', 'extensions', 'slug', 'tags', 'title',
+  'category', 'contentType', 'description', 'icon', 'label', 'language',
+  'persons', 'publishStatus', 'scope', 'extensions', 'slug', 'tags', 'title',
 ] as const;
 
 // =============================================================================
 // パスユーティリティ
 // =============================================================================
 
-/** content_type → スナップショットの拡張子 */
+/** contentType → スナップショットの拡張子 */
 function contentTypeToExt(contentType: string): string {
   switch (contentType) {
     case 'page':
@@ -205,13 +205,13 @@ export function prepareSyncState(
   entry: ScanEntry,
   body: string,
 ): void {
-  saveSnapshot(projectRoot, contentId, entry.meta.content_type, body);
+  saveSnapshot(projectRoot, contentId, entry.meta.contentType, body);
 
   state.contents[contentId] = {
     bodyHash: computeBodyHash(body),
     metaHash: computeMetaHash(entry.meta as Record<string, unknown>, entry.dirPath),
     localPath: resolveLocalPath(projectRoot, entry),
-    contentType: entry.meta.content_type,
+    contentType: entry.meta.contentType,
     title: entry.meta.title,
     syncedAt: new Date().toISOString(),
   };
@@ -240,12 +240,12 @@ export function classifyEntries(projectRoot: string, entries: ScanEntry[]): Stat
   const seenContentIds = new Set<string>();
 
   for (const entry of entries) {
-    const contentId = entry.meta.content_id;
+    const contentId = entry.meta.contentId;
     const localPath = resolveLocalPath(projectRoot, entry);
-    const contentType = entry.meta.content_type;
+    const contentType = entry.meta.contentType;
     const title = entry.meta.title;
 
-    // content_id がない → 未 push の新規コンテンツ
+    // contentId がない → 未 push の新規コンテンツ
     if (!contentId) {
       result.push({ status: 'new', localPath, contentType, title });
       continue;

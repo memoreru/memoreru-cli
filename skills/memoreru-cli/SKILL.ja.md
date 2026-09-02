@@ -30,17 +30,17 @@ memoreru diff [dir] [--file <filename>]
 
 ```json
 {
-  "readme.md": { "content_type": "page", "title": "README" },
-  "tasks.csv": { "content_type": "table", "title": "タスク一覧" },
-  "docs": { "content_type": "folder", "title": "ドキュメント" }
+  "readme.md": { "contentType": "page", "title": "README" },
+  "tasks.csv": { "contentType": "table", "title": "タスク一覧" },
+  "docs": { "contentType": "folder", "title": "ドキュメント" }
 }
 ```
 
-- `content_type` — **必須**。folder, page, table, slide, view, graph, dashboard
-- `content_id` — 初回 push 後に自動書き戻し。手動設定不要
+- `contentType` — **必須**。folder, page, table, slide, view, graph, dashboard
+- `contentId` — 初回 push 後に自動書き戻し。手動設定不要
 - `columns` — テーブルのみ。push 後に自動設定。`{ id, name, type }` の配列でカラムを一意に識別
 - `scope` — public, team, private（デフォルト: private）
-- `team_id` — scope が team の場合に必要
+- `teamId` — scope が team の場合に必要
 
 その他のプロパティ（日時・場所、公開設定、プライバシー等）は [references/properties.ja.md](references/properties.ja.md) を参照。
 

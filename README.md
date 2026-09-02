@@ -187,15 +187,15 @@ my-project/
 ```json
 {
   "readme.md": {
-    "content_type": "page",
+    "contentType": "page",
     "title": "Project README"
   },
   "tasks.csv": {
-    "content_type": "table",
+    "contentType": "table",
     "title": "Tasks"
   },
   "docs": {
-    "content_type": "folder",
+    "contentType": "folder",
     "title": "Documentation"
   }
 }
@@ -206,13 +206,13 @@ After the first push, IDs are automatically written back:
 ```json
 {
   "readme.md": {
-    "content_id": "q589jor87vmbnyylb8091cik",
-    "content_type": "page",
+    "contentId": "q589jor87vmbnyylb8091cik",
+    "contentType": "page",
     "title": "Project README"
   },
   "tasks.csv": {
-    "content_id": "dyn8dapi7ckz8vvic8indjnc",
-    "content_type": "table",
+    "contentId": "dyn8dapi7ckz8vvic8indjnc",
+    "contentType": "table",
     "title": "Tasks",
     "columns": [
       { "id": "col_abc123", "name": "Title", "type": "string" },
@@ -227,19 +227,19 @@ For tables, `columns` maps each column name to its unique server-side ID. This e
 
 ### Properties
 
-Only `content_type` is required. All other properties are optional.
+Only `contentType` is required. All other properties are optional.
 
 <details>
 <summary><strong>Basic Info</strong></summary>
 
 | Property | Description |
 |-------|-------------|
-| `content_id` | Auto-set after first push |
-| `content_type` | **Required.** `folder`, `page`, `table`, `slide`, `view`, `graph`, `dashboard` |
+| `contentId` | Auto-set after first push |
+| `contentType` | **Required.** `folder`, `page`, `table`, `slide`, `view`, `graph`, `dashboard` |
 | `title` | Inferred from filename if omitted |
 | `scope` | `public`, `team`, `private` (default: `private`) |
 | `description` | Description text |
-| `description_expanded` | Show expanded (default: `false`) |
+| `descriptionExpanded` | Show expanded (default: `false`) |
 | `category` | Category name or key |
 | `label` | Label |
 | `tags` | Tag names (e.g., `["React", "Tutorial"]`) |
@@ -259,7 +259,7 @@ Only `content_type` is required. All other properties are optional.
 | `persons` | Person names (e.g., `["John Doe"]`) |
 | `sources` | References |
 | `language` | Language code (default: `en`) |
-| `extensions` | Extensions (style/script/custom_process) by file path (see below) |
+| `extensions` | Extensions (style/script/customProcess) by file path (see below) |
 
 </details>
 
@@ -268,13 +268,13 @@ Only `content_type` is required. All other properties are optional.
 
 | Property | Description |
 |-------|-------------|
-| `team_id` | Team ID (required when scope is `team`) |
-| `parent_content_id` | Parent folder's content_id |
-| `publish_status` | `draft` or `published` (default: `published`) |
-| `scheduled_at` | Scheduled publish time (ISO 8601) |
-| `expires_at` | Expiration time (ISO 8601) |
-| `is_suspended` | Suspend (default: `false`) |
-| `is_archived` | Archive (default: `false`) |
+| `teamId` | Team ID (required when scope is `team`) |
+| `parentContentId` | Parent folder's contentId |
+| `publishStatus` | `draft` or `published` (default: `published`) |
+| `scheduledAt` | Scheduled publish time (ISO 8601) |
+| `expiresAt` | Expiration time (ISO 8601) |
+| `isSuspended` | Suspend (default: `false`) |
+| `isArchived` | Archive (default: `false`) |
 
 </details>
 
@@ -284,10 +284,10 @@ Only `content_type` is required. All other properties are optional.
 | Property | Description |
 |-------|-------------|
 | `discovery` | `listed`, `unlisted`, `profile` (default: `listed`) |
-| `access_level` | `open`, `login_required`, `followers_only` (default: `open`) |
-| `can_embed` | Allow embedding (default: `true`) |
-| `can_ai_crawl` | Allow AI crawlers (default: `true`) |
-| `has_password` | Password protection (default: `false`) |
+| `accessLevel` | `open`, `login_required`, `followers_only` (default: `open`) |
+| `canEmbed` | Allow embedding (default: `true`) |
+| `canAiCrawl` | Allow AI crawlers (default: `true`) |
+| `hasPassword` | Password protection (default: `false`) |
 
 </details>
 
@@ -296,10 +296,10 @@ Only `content_type` is required. All other properties are optional.
 
 | Property | Description |
 |-------|-------------|
-| `is_pinned` | Pin to top (default: `false`) |
-| `is_locked` | Lock editing (default: `false`) |
-| `auto_summary` | Auto-generate summary (default: `false`) |
-| `auto_translate` | Auto-generate translations (default: `false`) |
+| `isPinned` | Pin to top (default: `false`) |
+| `isLocked` | Lock editing (default: `false`) |
+| `autoSummary` | Auto-generate summary (default: `false`) |
+| `autoTranslate` | Auto-generate translations (default: `false`) |
 
 </details>
 
@@ -439,7 +439,7 @@ const page = await pullContent('q589jor87vmbnyylb8091cik');
 const table = await pullTableData('dyn8dapi7ckz8vvic8indjnc');
 
 const input: UpsertInput = {
-  content_type: 'page',
+  contentType: 'page',
   title: 'My Page',
   body: '# Hello',
 };

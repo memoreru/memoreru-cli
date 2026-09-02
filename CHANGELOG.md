@@ -9,8 +9,9 @@
   `csvData` / `rowIds` などを使用します。
 - **重要**: 本バージョンは camelCase 化後の Memoreru サーバーでのみ動作します。旧バージョンの
   CLI を新サーバーに接続すると同期できなくなるため、`npm install -g @memoreru-sdk/cli@latest`
-  で更新してください。ローカルの `.memoreru.json` マニフェストおよび CSV のファイル形式
-  （`content_id`、`row_id` など）は変更されません。
+  で更新してください。`.memoreru.json` マニフェストのキーも camelCase に統一しました。
+  既存の `content_id`、`content_type` などは `contentId`、`contentType` などへ手動で
+  書き換えてください。旧形式は警告して同期対象から除外します。CSV の `row_id` は変更ありません。
 
 ### Fixed
 

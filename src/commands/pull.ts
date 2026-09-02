@@ -47,14 +47,14 @@ function escapeCsvField(value: string): string {
 async function pullSettings(entry: ScanEntry, isPreview: boolean, projectRoot: string, state: StateFile): Promise<boolean> {
   const { dirPath, fileName, meta } = entry;
 
-  if (!meta.content_id) {
-    console.log(`\nℹ️ ${meta.title} — no content_id (not yet pushed)`);
+  if (!meta.contentId) {
+    console.log(`\nℹ️ ${meta.title} — no contentId (not yet pushed)`);
     return true;
   }
 
-  console.log(`\n🤲 ${meta.title} (${meta.content_type})`);
+  console.log(`\n🤲 ${meta.title} (${meta.contentType})`);
 
-  const result = await pullContent(meta.content_id, meta.content_type as 'page' | 'slide') as {
+  const result = await pullContent(meta.contentId, meta.contentType as 'page' | 'slide') as {
     settings?: Record<string, unknown>;
     tags?: string[];
     persons?: string[];
@@ -78,8 +78,8 @@ async function pullSettings(entry: ScanEntry, isPreview: boolean, projectRoot: s
         Object.assign(meta, metaUpdates);
       }
     }
-    if (meta.content_id) {
-      prepareSyncState(projectRoot, state, meta.content_id, entry, jsonBody);
+    if (meta.contentId) {
+      prepareSyncState(projectRoot, state, meta.contentId, entry, jsonBody);
     }
   }
 
@@ -94,14 +94,14 @@ async function pullSettings(entry: ScanEntry, isPreview: boolean, projectRoot: s
 async function pullTable(entry: ScanEntry, isPreview: boolean, projectRoot: string, state: StateFile): Promise<boolean> {
   const { dirPath, fileName, meta } = entry;
 
-  if (!meta.content_id) {
-    console.log(`\nℹ️ ${meta.title} — no content_id (not yet pushed)`);
+  if (!meta.contentId) {
+    console.log(`\nℹ️ ${meta.title} — no contentId (not yet pushed)`);
     return true;
   }
 
   console.log(`\n🤲 ${meta.title} (table)`);
 
-  const { columns, rows } = await pullTableData(meta.content_id);
+  const { columns, rows } = await pullTableData(meta.contentId);
   if (columns.length === 0) {
     console.log('   ℹ️No columns');
     return true;
@@ -140,10 +140,10 @@ async function pullTable(entry: ScanEntry, isPreview: boolean, projectRoot: stri
         columns: columns.map(c => ({ id: c.id, name: c.name, type: c.type })),
       });
     }
-    if (meta.content_id) {
+    if (meta.contentId) {
       // スナップショットは書き出し後のCSVで保存
       const finalCsv = readMarkdown(csvPath);
-      prepareSyncState(projectRoot, state, meta.content_id, entry, finalCsv);
+      prepareSyncState(projectRoot, state, meta.contentId, entry, finalCsv);
     }
   }
 
@@ -159,13 +159,13 @@ async function pullSingle(entry: ScanEntry, isPreview: boolean, projectRoot: str
   const ok = await pullSingleInner(entry, isPreview, projectRoot, state);
   // 拡張設定（スタイル/スクリプト/カスタム処理）を全コンテンツ型で対称にファイルへ書き出し。
   // content-level サブリソースのため型に依らず復元する（extensions が無ければ何もしない）。
-  if (ok && !isPreview && entry.meta.content_id) {
-    const extensions = await pullExtensionsForContent(entry.meta.content_id, entry.dirPath);
+  if (ok && !isPreview && entry.meta.contentId) {
+    const extensions = await pullExtensionsForContent(entry.meta.contentId, entry.dirPath);
     if (extensions.length > 0 && entry.fileName) {
       updateManifestEntry(entry.dirPath, entry.fileName, { extensions });
       // meta 反映 ＋ metaHash 再計算（snapshot は extensions 書込前に取られるため status 誤検知を防ぐ）
       Object.assign(entry.meta, { extensions });
-      const snap = state.contents[entry.meta.content_id];
+      const snap = state.contents[entry.meta.contentId];
       if (snap) snap.metaHash = computeMetaHash(entry.meta as Record<string, unknown>, entry.dirPath);
       console.log(`   🧩 Pulled ${extensions.length} extension(s)`);
     }
@@ -175,7 +175,7 @@ async function pullSingle(entry: ScanEntry, isPreview: boolean, projectRoot: str
 
 async function pullSingleInner(entry: ScanEntry, isPreview: boolean, projectRoot: string, state: StateFile): Promise<boolean> {
   const { dirPath, fileName, meta } = entry;
-  const contentType = meta.content_type;
+  const contentType = meta.contentType;
 
   if (contentType === 'folder') return true;
 
@@ -197,14 +197,14 @@ async function pullSingleInner(entry: ScanEntry, isPreview: boolean, projectRoot
     return true;
   }
 
-  if (!meta.content_id) {
-    console.log(`\nℹ️ ${meta.title} — no content_id (not yet pushed)`);
+  if (!meta.contentId) {
+    console.log(`\nℹ️ ${meta.title} — no contentId (not yet pushed)`);
     return true;
   }
 
   console.log(`\n🤲 ${meta.title} (${contentType})`);
 
-  const result = await pullContent(meta.content_id, contentType as 'page' | 'slide') as {
+  const result = await pullContent(meta.contentId, contentType as 'page' | 'slide') as {
     body: string;
     images: { memoreruUrl: string; localPath: string; hash: string | null }[];
     tags?: string[];
@@ -270,8 +270,8 @@ async function pullSingleInner(entry: ScanEntry, isPreview: boolean, projectRoot
       Object.assign(meta, metaUpdates);
     }
 
-    if (meta.content_id) {
-      prepareSyncState(projectRoot, state, meta.content_id, entry, result.body);
+    if (meta.contentId) {
+      prepareSyncState(projectRoot, state, meta.contentId, entry, result.body);
     }
   }
 
@@ -313,7 +313,7 @@ function resolveRemoteContents(
   if (manifest) {
     for (const [fn, data] of Object.entries(manifest)) {
       const m = buildMetaFromEntry(fn, data);
-      if (m.content_id) localMap.set(m.content_id, { dirPath: parentDir, fileName: fn, meta: m });
+      if (m.contentId) localMap.set(m.contentId, { dirPath: parentDir, fileName: fn, meta: m });
     }
   }
 
@@ -331,8 +331,8 @@ function resolveRemoteContents(
       : inferFileName(remote.contentType, remote.title);
 
     const meta: MemoreruMeta = {
-      content_id: remote.contentId,
-      content_type: remote.contentType as MemoreruMeta['content_type'],
+      contentId: remote.contentId,
+      contentType: remote.contentType as MemoreruMeta['contentType'],
       title: remote.title,
     };
 
@@ -342,8 +342,8 @@ function resolveRemoteContents(
         if (!existsSync(folderPath)) mkdirSync(folderPath, { recursive: true });
       }
       updateManifestEntry(parentDir, fileName, {
-        content_id: remote.contentId,
-        content_type: remote.contentType,
+        contentId: remote.contentId,
+        contentType: remote.contentType,
         title: remote.title,
       });
     }
@@ -376,9 +376,9 @@ export async function pullCommand(
     console.log(`\nℹ️Scanning manifest...`);
     entries = scanDirectory(dir);
     console.log(`   Found ${entries.length} content(s) in manifest`);
-  } else if (rootMeta && rootMeta.content_type === 'folder') { // 旧形式: 単一コンテンツ .memoreru.json
+  } else if (rootMeta && rootMeta.contentType === 'folder') { // 単一コンテンツ .memoreru.json
     console.log(`\nℹ️Fetching children of "${rootMeta.title}"...`);
-    const children = await listChildren(rootMeta.content_id!);
+    const children = await listChildren(rootMeta.contentId!);
     console.log(`   Found ${children.length} child content(s) on Memoreru`);
     entries = [{ dirPath: dir, meta: rootMeta }];
     entries.push(...resolveRemoteContents(dir, children, isPreview));

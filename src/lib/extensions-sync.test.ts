@@ -1,7 +1,7 @@
 /**
  * extensions-sync の純粋ヘルパーのテスト（node:test・追加依存なし）
  * - resolveExtensionFilePath: パストラバーサル防止（security）
- * - planExtensionSync: file_name / extension_id 照合の作成・更新・削除振り分け
+ * - planExtensionSync: fileName / extensionId 照合の作成・更新・削除振り分け
  * - extensionTitleOf: タイトル既定値 / triggerTypesOf: トリガー正規化
  */
 
@@ -44,7 +44,7 @@ test('resolveExtensionFilePath: 自ディレクトリそのものは拒否する
   assert.throws(() => resolveExtensionFilePath(DIR, '.'), /ディレクトリ外/);
 });
 
-test('planExtensionSync: file_name 一致は更新に振り分ける', () => {
+test('planExtensionSync: fileName 一致は更新に振り分ける', () => {
   const entries: ExtensionManifestEntry[] = [{ type: 'script', file: 'scripts/a.js' }];
   const existing = [rec({ extensionId: 's1', fileName: 'scripts/a.js', version: 3 })];
   const { toCreate, toUpdate } = planExtensionSync(entries, existing);
@@ -53,9 +53,9 @@ test('planExtensionSync: file_name 一致は更新に振り分ける', () => {
   assert.equal(toUpdate[0].existing.extensionId, 's1');
 });
 
-test('planExtensionSync: extension_id 一致は file_name が違っても更新に振り分ける', () => {
+test('planExtensionSync: extensionId 一致は fileName が違っても更新に振り分ける', () => {
   const entries: ExtensionManifestEntry[] = [
-    { type: 'script', file: 'scripts/renamed.js', extension_id: 's1' },
+    { type: 'script', file: 'scripts/renamed.js', extensionId: 's1' },
   ];
   const existing = [rec({ extensionId: 's1', fileName: 'scripts/old.js' })];
   const { toCreate, toUpdate } = planExtensionSync(entries, existing);

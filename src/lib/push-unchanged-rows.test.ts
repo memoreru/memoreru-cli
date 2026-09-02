@@ -18,8 +18,8 @@ test('差分 table push は未変更行を upsert API payload に含めない', 
       join(dir, '.memoreru.json'),
       JSON.stringify({
         'data.csv': {
-          content_id: 'table-1',
-          content_type: 'table',
+          contentId: 'table-1',
+          contentType: 'table',
           title: 'Table',
         },
       }),
