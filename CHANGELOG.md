@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.6.0 (2026-09-04)
+
+### Changed（サーバー側 API の変更に追随）
+
+- **CLI が呼び出す external API の URL を変更しました**。first-party 契約
+  （`/api/external/*`）にバージョンプレフィックスが付き、`/api/external/v1/*` になりました。
+- **レート制限（429）応答本文の待機秒数フィールドを `retry_after` から `retryAfter` に
+  変更しました**。
+- **重要**: 本バージョンは対応済みの Memoreru サーバーでのみ動作します。CLI を更新する際は
+  `npm install -g @memoreru-sdk/cli@latest` を実行してください。
+
 ## 1.5.0 (2026-09-02)
 
 ### Changed（サーバー側の API camelCase 化に追随）

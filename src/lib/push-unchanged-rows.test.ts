@@ -37,10 +37,10 @@ test('差分 table push は未変更行を upsert API payload に含めない', 
     configure({ baseUrl: 'https://example.test', apiKey: 'test-key' });
     globalThis.fetch = (async (input, init) => {
       const url = String(input);
-      if (url.endsWith('/api/external/sync/tenant')) {
+      if (url.endsWith('/api/external/v1/sync/tenant')) {
         return new Response(JSON.stringify({ slug: 'test', isDefault: true }));
       }
-      if (url.endsWith('/api/external/sync/upsert')) {
+      if (url.endsWith('/api/external/v1/sync/upsert')) {
         upsertPayloads.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
         return new Response(JSON.stringify({
           contentId: 'table-1',

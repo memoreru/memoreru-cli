@@ -52,7 +52,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
     if (res.status === 429 && attempt < maxRetries) {
       const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-      const retryAfter = (json.retry_after as number) || 30;
+      const retryAfter = (json.retryAfter as number) || 30;
       const waitSec = retryAfter + 2;
       console.log(`   ⏳ Rate limited, waiting ${waitSec}s (attempt ${attempt + 1}/${maxRetries})`);
       await new Promise(resolve => setTimeout(resolve, waitSec * 1000));
@@ -85,7 +85,7 @@ export async function pushContent(
   images: PushImage[],
   contentType: 'page' | 'slide' = 'page',
 ) {
-  const res = await request<Record<string, unknown>>('POST', `/api/external/sync/push/${contentId}`, {
+  const res = await request<Record<string, unknown>>('POST', `/api/external/v1/sync/push/${contentId}`, {
     contentType,
     body,
     images,
@@ -99,7 +99,7 @@ export async function uploadImage(
 ): Promise<{ localPath: string; url: string; skipped: boolean }> {
   const res = await request<Record<string, unknown>>(
     'POST',
-    `/api/external/sync/upload-image/${contentId}`,
+    `/api/external/v1/sync/upload-image/${contentId}`,
     image,
   );
   return (res.data ?? res) as { localPath: string; url: string; skipped: boolean };
@@ -117,7 +117,7 @@ export interface PullImageMeta {
 export async function pullContent(contentId: string, contentType: 'page' | 'slide' = 'page') {
   const res = await request<Record<string, unknown>>(
     'GET',
-    `/api/external/sync/pull/${contentId}?contentType=${contentType}`,
+    `/api/external/v1/sync/pull/${contentId}?contentType=${contentType}`,
   );
   return (res.data ?? res) as { body: string; images: PullImageMeta[] };
 }
@@ -307,7 +307,7 @@ export interface UpsertResult {
 }
 
 async function upsertOnce(input: UpsertInput | Record<string, unknown>): Promise<UpsertResult> {
-  const res = await request<Record<string, unknown>>('POST', '/api/external/sync/upsert', input);
+  const res = await request<Record<string, unknown>>('POST', '/api/external/v1/sync/upsert', input);
   return (res.data ?? res) as UpsertResult;
 }
 
@@ -547,8 +547,9 @@ export async function getTenantInfo(): Promise<{
   slug: string;
   isDefault: boolean;
 }> {
-  const res = await request<{ slug: string; isDefault: boolean }>('GET', '/api/external/sync/tenant');
-  return { slug: res.slug, isDefault: res.isDefault };
+  const res = await request<Record<string, unknown>>('GET', '/api/external/v1/sync/tenant');
+  const data = (res.data ?? res) as { slug: string; isDefault: boolean };
+  return { slug: data.slug, isDefault: data.isDefault };
 }
 
 // =============================================================================
