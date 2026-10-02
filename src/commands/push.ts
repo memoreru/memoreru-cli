@@ -7,6 +7,7 @@ import { basename, dirname, join } from 'path';
 import {
   deleteTableRows,
   fetchTableRowIds,
+  pickUpsertRequestFields,
   pushContent,
   uploadImage,
   upsertContent,
@@ -35,6 +36,7 @@ import {
   writeState,
 } from '../lib/state.js';
 import { verifyTenant } from '../lib/tenant.js';
+import { CONTENT_TYPE_KIND } from '../lib/content-types.js';
 
 /** Markdown から画像パスを抽出 */
 function extractLocalPaths(markdown: string): string[] {
@@ -52,19 +54,11 @@ function extractLocalPaths(markdown: string): string[] {
 
 /** push 時のソート優先度 */
 function typePriority(type: string): number {
-  const order: Record<string, number> = {
-    folder: 0,
-    table: 1,
-    page: 2,
-    slide: 2,
-    view: 3,
-    graph: 4,
-    dashboard: 5,
-    screen: 6,
-    report: 7,
-    workflow: 8,
-  };
-  return order[type] ?? 2;
+  const kind = CONTENT_TYPE_KIND[type as keyof typeof CONTENT_TYPE_KIND];
+  if (kind === 'folder') return 0;
+  if (kind === 'table') return 1;
+  if (kind === 'document') return 2;
+  return 3;
 }
 
 /**
@@ -111,7 +105,7 @@ async function pushSingle(
     contentType: _contentType,
     ...metaPayload
   } = meta;
-  Object.assign(payload, metaPayload);
+  Object.assign(payload, pickUpsertRequestFields(metaPayload));
 
   if (entry.parentContentId) payload.parentContentId = entry.parentContentId;
 
@@ -119,7 +113,7 @@ async function pushSingle(
   let deferredImages: { localPath: string; data: string; mimeType: string }[] = [];
   let rawFileContent: string | undefined; // スナップショット用（ファイルの生の内容）
   let unchangedRows: { rowId: string; version: number }[] = [];
-  if (contentType === 'page' || contentType === 'slide') {
+  if (CONTENT_TYPE_KIND[contentType] === 'document') {
     const bodyPath = fileName ? join(dirPath, fileName) : join(dirPath, 'body.md');
     if (existsSync(bodyPath)) {
       const body = readMarkdown(bodyPath);
@@ -242,7 +236,7 @@ async function pushSingle(
     if (deleteColumnIds.length > 0) {
       payload.deleteColumnIds = deleteColumnIds;
     }
-  } else if (['view', 'graph', 'dashboard', 'screen', 'report', 'workflow'].includes(contentType)) {
+  } else if (CONTENT_TYPE_KIND[contentType] === 'settings') {
     const settingsPath = fileName ? join(dirPath, fileName) : join(dirPath, 'settings.json');
     if (existsSync(settingsPath)) {
       const settingsRaw = readMarkdown(settingsPath);
@@ -298,7 +292,7 @@ async function pushSingle(
       console.log(skipped ? `   ⏭ ${localPath} (unchanged)` : `   ✓ ${localPath}`);
     }
     // 置換済みbodyをpush（画像なし）
-    await pushContent(result.contentId, convertedBody, [], contentType as 'page' | 'slide');
+    await pushContent(result.contentId, convertedBody, [], contentType);
     console.log(`   ✅ Body updated with image URLs`);
   }
 

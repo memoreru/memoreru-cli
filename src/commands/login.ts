@@ -54,6 +54,31 @@ function extractSessionCookie(res: Response): string | null {
   return null;
 }
 
+export function readLoginExchange(data: {
+  user: { id: string; name: string | null; email: string };
+  tenantId: string;
+}): { user: { id: string; name: string; email: string }; tenantId: string } {
+  return { user: { ...data.user, name: data.user.name ?? data.user.email }, tenantId: data.tenantId };
+}
+
+export function createLoginExchangeRequest(code: string): { code: string } {
+  return { code };
+}
+
+export async function exchangeLoginCode(baseUrl: string, code: string): Promise<{
+  response: Response;
+  data?: { user: { id: string; name: string; email: string }; tenantId: string };
+}> {
+  const response = await fetch(`${baseUrl}/api/external/v1/cli-auth/exchange`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(createLoginExchangeRequest(code)),
+  });
+  if (!response.ok) return { response };
+  const data = await response.json() as { user: { id: string; name: string | null; email: string }; tenantId: string };
+  return { response, data: readLoginExchange(data) };
+}
+
 // ---------------------------------------------------------------------------
 // ブラウザログイン
 // ---------------------------------------------------------------------------
@@ -104,11 +129,7 @@ async function loginWithBrowser(
 
       try {
         // 認可コードをセッショントークンに交換
-        const exchangeRes = await fetch(`${baseUrl}/api/external/v1/cli-auth/exchange`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code }),
-        });
+        const { response: exchangeRes, data } = await exchangeLoginCode(baseUrl, code);
 
         if (!exchangeRes.ok) {
           const body = await exchangeRes.text().catch(() => '');
@@ -124,17 +145,8 @@ async function loginWithBrowser(
           return;
         }
 
-        const data = (await exchangeRes.json()) as {
-          user: { id: string; name: string; email: string };
-          tenant_id: string;
-        };
-
         server.close();
-        resolve({
-          cookie,
-          user: data.user,
-          tenantId: data.tenant_id,
-        });
+        resolve({ cookie, ...data! });
       } catch (err) {
         server.close();
         reject(err);

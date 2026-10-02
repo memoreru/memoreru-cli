@@ -28,6 +28,7 @@ import { scanDirectory } from '../lib/scan.js';
 import type { ScanEntry } from '../lib/scan.js';
 import { computeMetaHash, prepareSyncState, readState, writeState, type StateFile } from '../lib/state.js';
 import { verifyTenant } from '../lib/tenant.js';
+import { CONTENT_TYPE_KIND } from '../lib/content-types.js';
 
 // =============================================================================
 // CSV ヘルパー
@@ -54,7 +55,7 @@ async function pullSettings(entry: ScanEntry, isPreview: boolean, projectRoot: s
 
   console.log(`\n🤲 ${meta.title} (${meta.contentType})`);
 
-  const result = await pullContent(meta.contentId, meta.contentType as 'page' | 'slide') as {
+  const result = await pullContent(meta.contentId, meta.contentType) as {
     settings?: Record<string, unknown>;
     tags?: string[];
     persons?: string[];
@@ -177,24 +178,12 @@ async function pullSingleInner(entry: ScanEntry, isPreview: boolean, projectRoot
   const { dirPath, fileName, meta } = entry;
   const contentType = meta.contentType;
 
-  if (contentType === 'folder') return true;
+  if (CONTENT_TYPE_KIND[contentType] === 'folder') return true;
 
-  if (contentType === 'table') return pullTable(entry, isPreview, projectRoot, state);
+  if (CONTENT_TYPE_KIND[contentType] === 'table') return pullTable(entry, isPreview, projectRoot, state);
 
-  if (
-    contentType === 'view' ||
-    contentType === 'graph' ||
-    contentType === 'dashboard' ||
-    contentType === 'screen' ||
-    contentType === 'report' ||
-    contentType === 'workflow'
-  ) {
+  if (CONTENT_TYPE_KIND[contentType] === 'settings') {
     return pullSettings(entry, isPreview, projectRoot, state);
-  }
-
-  if (contentType !== 'page' && contentType !== 'slide') {
-    console.log(`\nℹ️ ${meta.title} (${contentType}) — pull not supported`);
-    return true;
   }
 
   if (!meta.contentId) {
@@ -204,7 +193,7 @@ async function pullSingleInner(entry: ScanEntry, isPreview: boolean, projectRoot
 
   console.log(`\n🤲 ${meta.title} (${contentType})`);
 
-  const result = await pullContent(meta.contentId, contentType as 'page' | 'slide') as {
+  const result = await pullContent(meta.contentId, contentType) as {
     body: string;
     images: { memoreruUrl: string; localPath: string; hash: string | null }[];
     tags?: string[];
@@ -285,19 +274,11 @@ async function pullSingleInner(entry: ScanEntry, isPreview: boolean, projectRoot
 
 function inferFileName(contentType: string, title: string): string {
   const safeName = title.replace(/[/\\:*?"<>|]/g, '_').slice(0, 100);
-  switch (contentType) {
-    case 'page':
-    case 'slide':
-      return `${safeName}.md`;
-    case 'table':
-      return `${safeName}.csv`;
-    case 'view':
-    case 'graph':
-    case 'dashboard':
-      return `${safeName}.json`;
-    default:
-      return safeName;
-  }
+  const kind = CONTENT_TYPE_KIND[contentType as keyof typeof CONTENT_TYPE_KIND];
+  if (kind === 'document') return `${safeName}.md`;
+  if (kind === 'table') return `${safeName}.csv`;
+  if (kind === 'settings') return `${safeName}.json`;
+  return safeName;
 }
 
 function resolveRemoteContents(

@@ -16,6 +16,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { basename, extname, join } from 'path';
+import type { ContentType } from './content-types.js';
 
 // =============================================================================
 // 型定義
@@ -24,17 +25,7 @@ import { basename, extname, join } from 'path';
 /** コンテンツのメタデータ */
 export interface MemoreruMeta {
   contentId?: string;
-  contentType:
-    | 'page'
-    | 'slide'
-    | 'folder'
-    | 'table'
-    | 'graph'
-    | 'dashboard'
-    | 'view'
-    | 'screen'
-    | 'report'
-    | 'workflow';
+  contentType: ContentType;
   title: string;
   systemType?: string;
   customOrder?: number;

@@ -1,3 +1,4 @@
+import type { ContentType } from './content-types.js';
 /**
  * Memoreru API Client
  *
@@ -83,7 +84,7 @@ export async function pushContent(
   contentId: string,
   body: string,
   images: PushImage[],
-  contentType: 'page' | 'slide' = 'page',
+  contentType: ContentType = 'page',
 ) {
   const res = await request<Record<string, unknown>>('POST', `/api/external/v1/sync/push/${contentId}`, {
     contentType,
@@ -114,7 +115,7 @@ export interface PullImageMeta {
   mimeType: string;
 }
 
-export async function pullContent(contentId: string, contentType: 'page' | 'slide' = 'page') {
+export async function pullContent(contentId: string, contentType: ContentType = 'page') {
   const res = await request<Record<string, unknown>>(
     'GET',
     `/api/external/v1/sync/pull/${contentId}?contentType=${contentType}`,
@@ -220,17 +221,7 @@ export type IconInput =
 
 export interface UpsertInput {
   contentId?: string;
-  contentType:
-    | 'folder'
-    | 'page'
-    | 'table'
-    | 'slide'
-    | 'view'
-    | 'graph'
-    | 'dashboard'
-    | 'screen'
-    | 'report'
-    | 'workflow';
+  contentType: ContentType;
   title: string;
   scope?: 'public' | 'team' | 'private';
   body?: string;
@@ -295,6 +286,23 @@ export interface UpsertInput {
   autoTranslate?: boolean;
 }
 
+export const UPSERT_REQUEST_KEYS = [
+  'contentId', 'contentType', 'title', 'scope', 'body', 'images', 'csvData', 'columnIds',
+  'columnTypes', 'columnSettings', 'deleteColumnIds', 'rowIds', 'rowVersions', 'matchColumn',
+  'settings', 'description', 'descriptionExpanded', 'category', 'label', 'tags', 'slug',
+  'thumbnail', 'icon', 'datetime', 'location', 'persons', 'sources', 'language', 'systemType',
+  'customOrder', 'teamId', 'parentContentId', 'templateGroupTenantId', 'templateGroupId',
+  'publishStatus', 'scheduledAt', 'expiresAt', 'isSuspended', 'isArchived', 'discovery',
+  'accessLevel', 'canEmbed', 'canAiCrawl', 'hasPassword', 'isPinned', 'isLocked', 'autoSummary',
+  'autoTranslate',
+] as const satisfies readonly (keyof UpsertInput)[];
+
+const upsertRequestKeySet = new Set<string>(UPSERT_REQUEST_KEYS);
+
+export function pickUpsertRequestFields(input: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(input).filter(([key]) => upsertRequestKeySet.has(key)));
+}
+
 export interface UpsertResult {
   contentId: string;
   created: boolean;
@@ -307,7 +315,11 @@ export interface UpsertResult {
 }
 
 async function upsertOnce(input: UpsertInput | Record<string, unknown>): Promise<UpsertResult> {
-  const res = await request<Record<string, unknown>>('POST', '/api/external/v1/sync/upsert', input);
+  const res = await request<Record<string, unknown>>(
+    'POST',
+    '/api/external/v1/sync/upsert',
+    pickUpsertRequestFields(input as unknown as Record<string, unknown>),
+  );
   return (res.data ?? res) as UpsertResult;
 }
 
@@ -444,13 +456,16 @@ export async function pullTableData(tableId: string) {
 
   const idToName = new Map(columns.map(c => [c.id, c.name]));
   const allRows: Record<string, unknown>[] = [];
-  let page = 1;
   const limit = 500;
+  let cursor: string | null = null;
+  const seenCursors = new Set<string>();
 
   while (true) {
+    const query = new URLSearchParams({ limit: String(limit) });
+    if (cursor !== null) query.set('cursor', cursor);
     const rowRes = await request<Record<string, unknown>>(
       'GET',
-      `/api/v1/contents/tables/${tableId}/rows?page=${page}&limit=${limit}`,
+      `/api/v1/contents/tables/${tableId}/rows?${query}`,
     );
     const response = rowRes as Record<string, unknown>;
     const data = (response.data ?? response) as Record<string, unknown>;
@@ -468,9 +483,13 @@ export async function pullTableData(tableId: string) {
     }
 
     const pagination = (response.pagination ?? {}) as Record<string, unknown>;
-    const hasMore = pagination.hasMore as boolean | undefined;
-    if (!hasMore && rawRows.length < limit) break;
-    page++;
+    const nextCursor = pagination.nextCursor;
+    if (nextCursor === null) break;
+    if (typeof nextCursor !== 'string' || nextCursor.length === 0 || seenCursors.has(nextCursor)) {
+      throw new Error('Invalid table rows pagination cursor');
+    }
+    seenCursors.add(nextCursor);
+    cursor = nextCursor;
   }
 
   return { columns, rows: allRows };
@@ -482,12 +501,15 @@ export async function pullTableData(tableId: string) {
  */
 export async function fetchTableRowIds(tableId: string): Promise<string[]> {
   const ids: string[] = [];
-  let page = 1;
   const limit = 500;
+  let cursor: string | null = null;
+  const seenCursors = new Set<string>();
   while (true) {
+    const query = new URLSearchParams({ limit: String(limit) });
+    if (cursor !== null) query.set('cursor', cursor);
     const res = (await request<Record<string, unknown>>(
       'GET',
-      `/api/v1/contents/tables/${tableId}/rows?page=${page}&limit=${limit}`,
+      `/api/v1/contents/tables/${tableId}/rows?${query}`,
     )) as Record<string, unknown>;
     const data = (res.data ?? {}) as Record<string, unknown>;
     const rawRows = (data.rows ?? []) as Record<string, unknown>[];
@@ -495,9 +517,13 @@ export async function fetchTableRowIds(tableId: string): Promise<string[]> {
       if (row.rowId) ids.push(String(row.rowId));
     }
     const pagination = (res.pagination ?? {}) as Record<string, unknown>;
-    const hasMore = pagination.hasMore as boolean | undefined;
-    if (!hasMore && rawRows.length < limit) break;
-    page++;
+    const nextCursor = pagination.nextCursor;
+    if (nextCursor === null) break;
+    if (typeof nextCursor !== 'string' || nextCursor.length === 0 || seenCursors.has(nextCursor)) {
+      throw new Error('Invalid table rows pagination cursor');
+    }
+    seenCursors.add(nextCursor);
+    cursor = nextCursor;
   }
   return ids;
 }

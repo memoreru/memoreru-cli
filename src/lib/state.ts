@@ -16,6 +16,7 @@ import { createHash } from 'crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join, relative, posix } from 'path';
 import type { ScanEntry } from './scan.js';
+import { CONTENT_TYPE_KIND } from './content-types.js';
 
 // =============================================================================
 // 型定義
@@ -67,19 +68,11 @@ const META_HASH_FIELDS = [
 
 /** contentType → スナップショットの拡張子 */
 function contentTypeToExt(contentType: string): string {
-  switch (contentType) {
-    case 'page':
-    case 'slide':
-      return '.md';
-    case 'table':
-      return '.csv';
-    case 'view':
-    case 'graph':
-    case 'dashboard':
-      return '.json';
-    default:
-      return '';
-  }
+  const kind = CONTENT_TYPE_KIND[contentType as keyof typeof CONTENT_TYPE_KIND];
+  if (kind === 'document') return '.md';
+  if (kind === 'table') return '.csv';
+  if (kind === 'settings') return '.json';
+  return '';
 }
 
 /** .memoreru/ ディレクトリのパス（必要なら作成） */
