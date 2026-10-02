@@ -1,6 +1,6 @@
 {
   "name": "@memoreru-sdk/cli",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Memoreru CLI — sync local files with Memoreru",
   "type": "module",
   "bin": {
@@ -18,7 +18,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "tsc && node --test \"dist/src/lib/*.test.js\""
+    "test": "tsc && node --test \"dist/src/lib/*.test.js\" \"dist/src/commands/*.test.js\""
   },
   "engines": {
     "node": ">=18"

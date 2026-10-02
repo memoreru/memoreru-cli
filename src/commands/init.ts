@@ -4,12 +4,16 @@
 
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { basename, join } from 'path';
+import { isContentType, isSettingsContentType } from '../lib/content-types.js';
 
 export async function initCommand(
   directory: string | undefined,
   options: { type: string },
 ) {
   const dir = directory || '.';
+  if (!isContentType(options.type)) {
+    throw new Error(`Unsupported content type: ${options.type}`);
+  }
   const contentType = options.type;
   const title = basename(dir === '.' ? process.cwd() : dir);
 
@@ -28,14 +32,7 @@ export async function initCommand(
     console.log(`   Created ${manifestPath}`);
     console.log(`\n💡 Tip: Register this folder in the parent directory's .memoreru.json:`);
     console.log(`   "${title}": { "contentType": "folder", "title": "${title}" }`);
-  } else if (
-    contentType === 'view' ||
-    contentType === 'graph' ||
-    contentType === 'dashboard' ||
-    contentType === 'screen' ||
-    contentType === 'report' ||
-    contentType === 'workflow'
-  ) {
+  } else if (isSettingsContentType(contentType)) {
     const fileName = `${title}.json`;
     const manifest: Record<string, Record<string, unknown>> = {
       [fileName]: { contentType, title },

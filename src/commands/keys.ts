@@ -7,6 +7,33 @@
 
 import { getConfig, buildAuthHeaders } from '../lib/api.js';
 
+type ApiKeyCreateResponse = {
+  id: string;
+  name: string;
+  key: string;
+  keyPrefix: string;
+  scopes: string[];
+  createdAt: string;
+};
+
+type ApiKeyListItem = Omit<ApiKeyCreateResponse, 'key'> & { lastUsedAt: string | null };
+
+export function normalizeApiKey(key: ApiKeyCreateResponse | ApiKeyListItem) {
+  return {
+    id: key.id,
+    name: key.name,
+    key: 'key' in key ? key.key : undefined,
+    keyPrefix: key.keyPrefix,
+    scopes: key.scopes ?? [],
+    lastUsedAt: 'lastUsedAt' in key ? key.lastUsedAt : null,
+    createdAt: key.createdAt,
+  };
+}
+
+export function createApiKeyRequest(name: string, scopes: string[]): { name: string; scopes: string[] } {
+  return { name, scopes };
+}
+
 // ---------------------------------------------------------------------------
 // ヘルパー: 認証付きリクエスト（レスポンス status にアクセスする用途）
 // ---------------------------------------------------------------------------
@@ -39,10 +66,10 @@ export async function keysCreateCommand(options: {
   try {
     const { res, data } = await sessionRequest<{
       status: string;
-      data?: { id: string; name: string; key: string; key_prefix: string; scopes: string[]; created_at: string };
+      data?: ApiKeyCreateResponse;
       detail?: string;
       message?: string;
-    }>('POST', '/api/external/v1/api-keys', { name, scopes });
+    }>('POST', '/api/external/v1/api-keys', createApiKeyRequest(name, scopes));
 
     if (!res.ok) {
       const msg = (data as Record<string, unknown>).detail ?? (data as Record<string, unknown>).message ?? `HTTP ${res.status}`;
@@ -50,14 +77,14 @@ export async function keysCreateCommand(options: {
       process.exit(1);
     }
 
-    const key = data.data!;
+    const key = normalizeApiKey(data.data!);
     console.log(`\n✅ APIキーを作成しました`);
     console.log();
     console.log(`   ${key.key}`);
     console.log();
     console.log(`   名前:           ${key.name}`);
     console.log(`   スコープ:       ${key.scopes.join(', ')}`);
-    console.log(`   プレフィックス: ${key.key_prefix}`);
+    console.log(`   プレフィックス: ${key.keyPrefix}`);
     console.log();
     console.log(`   ⚠️ このキーは一度しか表示されません。安全な場所に保存してください。`);
   } catch (err) {
@@ -74,7 +101,7 @@ export async function keysListCommand(options: { profile?: string }) {
   try {
     const { res, data } = await sessionRequest<{
       status: string;
-      data?: { keys: { id: string; name: string; key_prefix: string; scopes: string[]; last_used_at: string | null; created_at: string }[] };
+      data?: { keys: ApiKeyListItem[] };
       detail?: string;
       message?: string;
     }>('GET', '/api/external/v1/api-keys');
@@ -85,7 +112,7 @@ export async function keysListCommand(options: { profile?: string }) {
       process.exit(1);
     }
 
-    const keys = data.data?.keys ?? [];
+    const keys = (data.data?.keys ?? []).map(normalizeApiKey);
     if (keys.length === 0) {
       console.log('\n   APIキーはありません。');
       return;
@@ -93,9 +120,9 @@ export async function keysListCommand(options: { profile?: string }) {
 
     console.log();
     for (const key of keys) {
-      const date = key.created_at.slice(0, 10);
+      const date = key.createdAt.slice(0, 10);
       const scopes = key.scopes.join(', ');
-      console.log(`   ${key.key_prefix.padEnd(10)} ${key.name.padEnd(20)} ${scopes.padEnd(22)} ${date}`);
+      console.log(`   ${key.keyPrefix.padEnd(10)} ${key.name.padEnd(20)} ${scopes.padEnd(22)} ${date}`);
     }
   } catch (err) {
     console.error(`\n❌ ${err instanceof Error ? err.message : err}`);
@@ -111,7 +138,7 @@ export async function keysRevokeCommand(prefix: string, options: { profile?: str
   try {
     // まず一覧を取得してプレフィックスから ID を解決
     const { res: listRes, data: listData } = await sessionRequest<{
-      data?: { keys: { id: string; name: string; key_prefix: string }[] };
+      data?: { keys: ApiKeyListItem[] };
     }>('GET', '/api/external/v1/api-keys');
 
     if (!listRes.ok) {
@@ -119,8 +146,8 @@ export async function keysRevokeCommand(prefix: string, options: { profile?: str
       process.exit(1);
     }
 
-    const keys = listData.data?.keys ?? [];
-    const target = keys.find(k => k.key_prefix === prefix || k.id === prefix);
+    const keys = (listData.data?.keys ?? []).map(normalizeApiKey);
+    const target = keys.find(k => k.keyPrefix === prefix || k.id === prefix);
     if (!target) {
       console.error(`\n❌ プレフィックス '${prefix}' に一致するAPIキーが見つかりません。`);
       process.exit(1);
@@ -133,7 +160,7 @@ export async function keysRevokeCommand(prefix: string, options: { profile?: str
       process.exit(1);
     }
 
-    console.log(`\n✅ APIキー '${target.name}' (${target.key_prefix}) を無効化しました`);
+    console.log(`\n✅ APIキー '${target.name}' (${target.keyPrefix}) を無効化しました`);
   } catch (err) {
     console.error(`\n❌ ${err instanceof Error ? err.message : err}`);
     process.exit(1);
