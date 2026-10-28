@@ -25,7 +25,6 @@ export interface ExtensionManifestEntry {
   title?: string;
   isDisabled?: boolean;
   executionOrder?: string;
-  triggers?: string[];
   /** push 後に書き戻される */
   extensionId?: string;
 }
@@ -42,28 +41,6 @@ export function resolveExtensionFilePath(dirPath: string, file: string): string 
     throw new Error(`拡張設定ファイルのパスがディレクトリ外を指しています: ${file}`);
   }
   return target;
-}
-
-/** API のトリガー（オブジェクト配列）を trigger_type 文字列配列へ正規化 */
-export function triggerTypesOf(triggers: unknown): string[] | undefined {
-  if (!Array.isArray(triggers)) return undefined;
-  const types = triggers
-    .map(t =>
-      t && typeof t === 'object' && 'trigger_type' in t
-        ? String((t as { trigger_type: unknown }).trigger_type)
-        : typeof t === 'string'
-          ? t
-          : null,
-    )
-    .filter((t): t is string => !!t);
-  return types;
-}
-
-/** 2 つの trigger 集合が等しいか（順序非依存） */
-function sameTriggers(a: string[] | undefined, b: string[] | undefined): boolean {
-  const sa = [...(a ?? [])].sort();
-  const sb = [...(b ?? [])].sort();
-  return sa.length === sb.length && sa.every((v, i) => v === sb[i]);
 }
 
 /** push 計画: fileName（無ければ manifest の extensionId）で既存とマッチし、作成/更新/削除に振り分ける */
@@ -122,9 +99,6 @@ function isExtensionUnchanged(
   ) {
     return false;
   }
-  if (entry.triggers !== undefined && !sameTriggers(entry.triggers, triggerTypesOf(ex.triggers))) {
-    return false;
-  }
   return true;
 }
 
@@ -152,7 +126,6 @@ export async function pushExtensionsForContent(
       fileName: entry.file,
       isDisabled: entry.isDisabled,
       executionOrder: entry.executionOrder,
-      triggers: entry.triggers,
     });
     resultByFile.set(entry.file, created.extensionId);
   }
@@ -169,7 +142,6 @@ export async function pushExtensionsForContent(
       fileName: entry.file,
       isDisabled: entry.isDisabled,
       executionOrder: entry.executionOrder,
-      triggers: entry.triggers,
     });
   }
 
@@ -184,7 +156,7 @@ export async function pushExtensionsForContent(
 
 /**
  * pull: API の拡張設定を取得し、fileName のパスへ code を書き出す。
- * 戻り値は manifest に書く extensions[] エントリ（executionOrder / triggers も保持）。
+ * 戻り値は manifest に書く extensions[] エントリ（executionOrder も保持）。
  */
 export async function pullExtensionsForContent(
   contentId: string,
@@ -205,8 +177,6 @@ export async function pullExtensionsForContent(
       extensionId: s.extensionId,
     };
     if (s.executionOrder != null) entry.executionOrder = s.executionOrder;
-    const triggers = triggerTypesOf(s.triggers);
-    if (triggers && triggers.length > 0) entry.triggers = triggers;
     entries.push(entry);
   }
   return entries;

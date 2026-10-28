@@ -123,14 +123,14 @@
         },
         "extensions": {
           "type": "array",
-          "description": "拡張設定（Extensions: スタイル/スクリプト/カスタム処理）をローカルファイルで管理。push でファイル内容を反映、pull でファイルへ書き出し。",
+          "description": "拡張設定（スタイル/スクリプト）をローカルファイルで管理。push でファイル内容を反映、pull でファイルへ書き出し。",
           "items": {
             "type": "object",
             "required": ["type", "file"],
             "properties": {
               "type": {
-                "enum": ["style", "script", "custom_process"],
-                "description": "種別（style=CSS / script=JS / custom_process=イベント駆動JS）"
+                "enum": ["style", "script"],
+                "description": "種別（style=CSS / script=JS）"
               },
               "file": {
                 "type": "string",
@@ -139,11 +139,6 @@
               "title": { "type": "string", "description": "表示タイトル（未指定はファイル名のベース名）" },
               "isDisabled": { "type": "boolean", "description": "無効化" },
               "executionOrder": { "type": "string", "description": "実行順序" },
-              "triggers": {
-                "type": "array",
-                "items": { "type": "string" },
-                "description": "実行トリガー（customProcess のみ）"
-              },
               "extensionId": { "type": "string", "description": "push 後に自動で書き戻される" }
             },
             "additionalProperties": false

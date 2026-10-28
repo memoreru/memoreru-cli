@@ -509,10 +509,13 @@
             "type": "string",
             "enum": [
               "style",
-              "script",
-              "custom_process"
+              "script"
             ],
-            "description": "Extension type: style (CSS) / script (JS) / custom_process (event-driven JS)"
+            "description": "Extension type: style (CSS) / script (JavaScript)"
+          },
+          "apiVersion": {
+            "type": "integer",
+            "description": "mem API contract version"
           },
           "code": {
             "type": "string",
@@ -540,11 +543,6 @@
             "type": "number",
             "description": "Optimistic-lock version"
           },
-          "triggers": {
-            "type": "array",
-            "items": {},
-            "description": "Triggers (custom_process only)"
-          },
           "sanitizeWarnings": {
             "type": "array",
             "items": {
@@ -568,6 +566,7 @@
           "contentId",
           "title",
           "type",
+          "apiVersion",
           "code",
           "fileName",
           "isDisabled",
@@ -588,10 +587,9 @@
             "type": "string",
             "enum": [
               "style",
-              "script",
-              "custom_process"
+              "script"
             ],
-            "description": "Extension type: style (CSS) / script (JS) / custom_process (event-driven JS)"
+            "description": "Extension type: style (CSS) / script (JavaScript)"
           },
           "code": {
             "type": "string",
@@ -608,18 +606,6 @@
           "executionOrder": {
             "type": "string",
             "description": "Execution order"
-          },
-          "triggers": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "after_create",
-                "after_update",
-                "after_delete"
-              ]
-            },
-            "description": "Execution triggers (custom_process only)"
           }
         },
         "required": [
@@ -679,18 +665,6 @@
           "executionOrder": {
             "type": "string",
             "description": "Execution order"
-          },
-          "triggers": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "after_create",
-                "after_update",
-                "after_delete"
-              ]
-            },
-            "description": "Execution triggers (custom_process only; replaces existing)"
           }
         },
         "required": [
@@ -3537,12 +3511,12 @@
       }
     },
     "/api/v1/contents/{contentId}/extensions": {
-      "get": {
+      "post": {
         "tags": [
           "Contents - Extensions"
         ],
-        "summary": "List extensions",
-        "description": "List styles / scripts / custom processes (owner only). Filter by type.",
+        "summary": "Create extension",
+        "description": "Create a style or script (owner only). The retired custom_process type is rejected with HTTP 400.",
         "security": [
           {
             "BearerAuth": []
@@ -3559,90 +3533,42 @@
             "description": "Content ID",
             "name": "contentId",
             "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "style",
-                "script",
-                "custom_process"
-              ],
-              "description": "Filter by extension type"
-            },
-            "required": false,
-            "description": "Filter by extension type",
-            "name": "type",
-            "in": "query"
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExtensionRequest"
+              }
+            }
+          }
+        },
         "responses": {
-          "200": {
-            "description": "Success",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "success"
-                      ],
-                      "description": "Result status"
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Extension"
-                      },
-                      "description": "Extensions"
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "$ref": "#/components/schemas/ExtensionResponse"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid input",
+            "description": "Invalid input. The custom_process type has been retired; use workflows.",
             "content": {
               "application/problem+json": {
                 "examples": {
-                  "invalidType": {
+                  "invalidInput": {
                     "summary": "バリデーションエラー",
                     "value": {
                       "code": "INVALID_INPUT",
                       "type": "https://memoreru.com/problems/invalid-input",
                       "title": "Invalid Input",
                       "status": 400,
-                      "detail": "不正なスクリプト種別",
-                      "instance": "/api/v1/contents/{content_id}/extensions"
-                    }
-                  },
-                  "codeTooLarge": {
-                    "summary": "バリデーションエラー",
-                    "value": {
-                      "code": "INVALID_INPUT",
-                      "type": "https://memoreru.com/problems/invalid-input",
-                      "title": "Invalid Input",
-                      "status": 400,
-                      "detail": "コードが上限（100KB）を超えています",
-                      "instance": "/api/v1/contents/{content_id}/extensions"
-                    }
-                  },
-                  "versionRequired": {
-                    "summary": "バリデーションエラー",
-                    "value": {
-                      "code": "INVALID_INPUT",
-                      "type": "https://memoreru.com/problems/invalid-input",
-                      "title": "Invalid Input",
-                      "status": 400,
-                      "detail": "version（数値）を指定してください",
-                      "instance": "/api/v1/contents/{content_id}/extensions/:extensionId"
+                      "detail": "custom_process は廃止済みです。ワークフローを使ってください。",
+                      "instance": "/api/v1/contents/{contentId}/extensions"
                     }
                   }
                 },
@@ -3757,12 +3683,12 @@
           }
         }
       },
-      "post": {
+      "get": {
         "tags": [
           "Contents - Extensions"
         ],
-        "summary": "Create extension",
-        "description": "Create a style / script / custom process (owner only).",
+        "summary": "List extensions",
+        "description": "List styles / scripts (owner only). The retired custom_process type is rejected with HTTP 400.",
         "security": [
           {
             "BearerAuth": []
@@ -3779,65 +3705,67 @@
             "description": "Content ID",
             "name": "contentId",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "style",
+                "script"
+              ],
+              "description": "Filter by extension type"
+            },
+            "required": false,
+            "description": "Filter by extension type",
+            "name": "type",
+            "in": "query"
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateExtensionRequest"
-              }
-            }
-          },
-          "required": false
-        },
         "responses": {
-          "201": {
-            "description": "Created",
+          "200": {
+            "description": "Success",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ExtensionResponse"
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "description": "Result status"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Extension"
+                      },
+                      "description": "Extensions"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "data"
+                  ]
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid input",
+            "description": "Invalid input. The custom_process type has been retired; use workflows.",
             "content": {
               "application/problem+json": {
                 "examples": {
-                  "invalidType": {
+                  "invalidInput": {
                     "summary": "バリデーションエラー",
                     "value": {
                       "code": "INVALID_INPUT",
                       "type": "https://memoreru.com/problems/invalid-input",
                       "title": "Invalid Input",
                       "status": 400,
-                      "detail": "不正なスクリプト種別",
-                      "instance": "/api/v1/contents/{content_id}/extensions"
-                    }
-                  },
-                  "codeTooLarge": {
-                    "summary": "バリデーションエラー",
-                    "value": {
-                      "code": "INVALID_INPUT",
-                      "type": "https://memoreru.com/problems/invalid-input",
-                      "title": "Invalid Input",
-                      "status": 400,
-                      "detail": "コードが上限（100KB）を超えています",
-                      "instance": "/api/v1/contents/{content_id}/extensions"
-                    }
-                  },
-                  "versionRequired": {
-                    "summary": "バリデーションエラー",
-                    "value": {
-                      "code": "INVALID_INPUT",
-                      "type": "https://memoreru.com/problems/invalid-input",
-                      "title": "Invalid Input",
-                      "status": 400,
-                      "detail": "version（数値）を指定してください",
-                      "instance": "/api/v1/contents/{content_id}/extensions/:extensionId"
+                      "detail": "custom_process は廃止済みです。ワークフローを使ってください。",
+                      "instance": "/api/v1/contents/{contentId}/extensions?type=custom_process"
                     }
                   }
                 },
@@ -3995,8 +3923,7 @@
                 "$ref": "#/components/schemas/UpdateExtensionRequest"
               }
             }
-          },
-          "required": false
+          }
         },
         "responses": {
           "200": {
@@ -4164,7 +4091,7 @@
           "Contents - Extensions"
         ],
         "summary": "Delete extension",
-        "description": "Delete an extension (owner only; triggers removed too).",
+        "description": "Delete an extension (owner only).",
         "security": [
           {
             "BearerAuth": []

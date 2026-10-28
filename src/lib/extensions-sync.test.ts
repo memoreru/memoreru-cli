@@ -2,7 +2,7 @@
  * extensions-sync の純粋ヘルパーのテスト（node:test・追加依存なし）
  * - resolveExtensionFilePath: パストラバーサル防止（security）
  * - planExtensionSync: fileName / extensionId 照合の作成・更新・削除振り分け
- * - extensionTitleOf: タイトル既定値 / triggerTypesOf: トリガー正規化
+ * - extensionTitleOf: タイトル既定値
  */
 
 import assert from 'node:assert/strict';
@@ -12,7 +12,6 @@ import {
   extensionTitleOf,
   planExtensionSync,
   resolveExtensionFilePath,
-  triggerTypesOf,
 } from './extensions-sync.js';
 
 const rec = (over: Partial<import('./api.js').ExtensionRecord> & { extensionId: string }) => ({
@@ -81,15 +80,6 @@ test('planExtensionSync: manifest に無い既存は toDelete（prune 候補）�
   assert.equal(toUpdate.length, 1);
   assert.equal(toDelete.length, 1);
   assert.equal(toDelete[0].extensionId, 'orphan');
-});
-
-test('triggerTypesOf: オブジェクト配列を trigger_type 文字列へ正規化', () => {
-  assert.deepEqual(
-    triggerTypesOf([{ trigger_type: 'after_create' }, { trigger_type: 'after_update' }]),
-    ['after_create', 'after_update'],
-  );
-  assert.deepEqual(triggerTypesOf(['on_display']), ['on_display']);
-  assert.equal(triggerTypesOf(undefined), undefined);
 });
 
 test('extensionTitleOf: title 優先、無ければ拡張子抜きのベース名', () => {

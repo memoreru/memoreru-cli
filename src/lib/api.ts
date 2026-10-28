@@ -124,11 +124,11 @@ export async function pullContent(contentId: string, contentType: ContentType = 
 }
 
 // =============================================================================
-// 拡張設定（Extensions: スタイル / スクリプト / カスタム処理）
+// 拡張設定（Extensions: スタイル / スクリプト）
 // external canonical API: /api/v1/contents/:contentId/extensions
 // =============================================================================
 
-export type ExtensionType = 'style' | 'script' | 'custom_process';
+export type ExtensionType = 'style' | 'script';
 
 export interface ExtensionRecord {
   extensionId: string;
@@ -140,7 +140,6 @@ export interface ExtensionRecord {
   isDisabled: boolean;
   executionOrder: string | null;
   version: number;
-  triggers?: unknown[];
 }
 
 export interface CreateExtensionInput {
@@ -150,7 +149,6 @@ export interface CreateExtensionInput {
   fileName?: string;
   isDisabled?: boolean;
   executionOrder?: string;
-  triggers?: string[];
 }
 
 export interface UpdateExtensionInput {
@@ -160,7 +158,6 @@ export interface UpdateExtensionInput {
   fileName?: string;
   isDisabled?: boolean;
   executionOrder?: string;
-  triggers?: string[];
 }
 
 export async function listExtensions(
@@ -299,6 +296,60 @@ export const UPSERT_REQUEST_KEYS = [
 
 const upsertRequestKeySet = new Set<string>(UPSERT_REQUEST_KEYS);
 
+const supportedColumnSettingKeys = new Set(['required', 'description', 'options']);
+const supportedColumnOptionKeys = new Set(['key', 'value', 'color', 'description']);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/** Keep manifest metadata intact while sending only settings supported by the sync API. */
+export function projectColumnSettings(
+  input: Record<string, unknown>
+): { input: Record<string, unknown>; droppedKeys: string[] } {
+  if (!isRecord(input.columnSettings)) return { input, droppedKeys: [] };
+
+  const droppedKeys = new Set<string>();
+  const columnSettings: Record<string, unknown> = {};
+  for (const [columnName, rawSettings] of Object.entries(input.columnSettings)) {
+    if (!isRecord(rawSettings)) {
+      columnSettings[columnName] = rawSettings;
+      continue;
+    }
+
+    const settings: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(rawSettings)) {
+      if (!supportedColumnSettingKeys.has(key)) {
+        droppedKeys.add(key);
+        continue;
+      }
+      if (key !== 'options' || !Array.isArray(value)) {
+        settings[key] = value;
+        continue;
+      }
+
+      settings.options = value.map(option => {
+        if (!isRecord(option)) return option;
+        const projectedOption: Record<string, unknown> = {};
+        for (const [optionKey, optionValue] of Object.entries(option)) {
+          if (!supportedColumnOptionKeys.has(optionKey)) {
+            droppedKeys.add(`options.${optionKey}`);
+            continue;
+          }
+          projectedOption[optionKey] = optionValue;
+        }
+        return projectedOption;
+      });
+    }
+    columnSettings[columnName] = settings;
+  }
+
+  return {
+    input: { ...input, columnSettings },
+    droppedKeys: [...droppedKeys].sort(),
+  };
+}
+
 export function pickUpsertRequestFields(input: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(input).filter(([key]) => upsertRequestKeySet.has(key)));
 }
@@ -343,13 +394,20 @@ function splitCsvRows(csv: string): { header: string; dataRows: string[] } {
 export async function upsertContent(
   input: UpsertInput | Record<string, unknown>
 ): Promise<UpsertResult> {
-  const rec = input as Record<string, unknown>;
+  const projected = projectColumnSettings(input as Record<string, unknown>);
+  if (projected.droppedKeys.length > 0) {
+    console.error(
+      `⚠️ Unsupported column setting keys omitted from request: ${projected.droppedKeys.join(', ')}`
+    );
+  }
+  const requestInput = projected.input;
+  const rec = requestInput;
   const csv = typeof rec.csvData === 'string' ? rec.csvData : undefined;
 
-  if (rec.contentType !== 'table' || !csv) return upsertOnce(input);
+  if (rec.contentType !== 'table' || !csv) return upsertOnce(requestInput);
 
   const { header, dataRows } = splitCsvRows(csv);
-  if (dataRows.length <= ROW_CHUNK_SIZE) return upsertOnce(input);
+  if (dataRows.length <= ROW_CHUNK_SIZE) return upsertOnce(requestInput);
 
   const rowIds = Array.isArray(rec.rowIds) ? (rec.rowIds as (string | null)[]) : undefined;
   const rowVersions = Array.isArray(rec.rowVersions)
