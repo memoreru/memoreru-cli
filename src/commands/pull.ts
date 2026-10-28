@@ -12,6 +12,7 @@ import {
   pullContent,
   pullTableData,
 } from '../lib/api.js';
+import { formatPulledTableCell } from '../lib/table-csv.js';
 import type { ContentSummary } from '../lib/api.js';
 import { computeFileHash, readMarkdown, saveImage, writeMarkdown } from '../lib/files.js';
 import {
@@ -113,7 +114,7 @@ async function pullTable(entry: ScanEntry, isPreview: boolean, projectRoot: stri
   const rowVersions = rows.map(r => Number(r.version) || 1);
   const header = columns.map(c => escapeCsvField(c.name)).join(',');
   const dataLines = rows.map(row =>
-    columns.map(c => escapeCsvField(String(row[c.name] ?? ''))).join(','),
+    columns.map(c => escapeCsvField(formatPulledTableCell(row[c.name], c.type))).join(','),
   );
   const csv = [header, ...dataLines].join('\n') + '\n';
 
